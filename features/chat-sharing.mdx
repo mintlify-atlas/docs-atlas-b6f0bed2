@@ -1,0 +1,384 @@
+---
+title: Chat Sharing
+description: Share your conversations with others using public or private links, and collaborate by forking shared chats
+---
+
+Deni AI allows you to share your chat conversations with others, making it easy to collaborate, showcase AI interactions, or get feedback on conversations. Share conversations publicly or privately with specific users.
+
+## Overview
+
+Chat sharing enables you to:
+- **Create shareable links** for any conversation
+- **Control visibility** with public or private sharing
+- **Manage access** by adding/removing specific recipients for private shares
+- **Enable forking** to let others create copies of your conversations
+- **View shared chats** without requiring recipients to have an account (for public shares)
+
+<Info>
+Shared chats are read-only. Recipients can view the conversation but cannot send new messages to the original chat.
+</Info>
+
+## Creating a Share
+
+<Steps>
+  <Step title="Open Chat Settings">
+    Navigate to the conversation you want to share and open the chat options menu.
+  </Step>
+  
+  <Step title="Enable Sharing">
+    Click **Share** to create a shareable link. This generates a unique share ID for your conversation.
+  </Step>
+  
+  <Step title="Configure Settings">
+    Choose your sharing preferences:
+    - **Visibility**: Public or Private
+    - **Allow Fork**: Enable/disable the ability for others to copy your conversation
+  </Step>
+  
+  <Step title="Copy Link">
+    Copy the generated link to share with others. The link format is:
+    ```
+    https://your-domain.com/shared/[share-id]
+    ```
+  </Step>
+</Steps>
+
+## Visibility Options
+
+### Public Shares
+
+Public shares are accessible to anyone with the link.
+
+<Card title="Public Sharing" icon="globe">
+  - No authentication required to view
+  - Anyone with the link can access the conversation
+  - Ideal for showcasing AI interactions or sharing knowledge
+  - Visible to search engines if indexed
+</Card>
+
+**When to use:**
+- Sharing examples or tutorials
+- Publishing interesting AI conversations
+- Creating public knowledge bases
+- Demonstrating AI capabilities
+
+### Private Shares
+
+Private shares require authentication and explicit access grants.
+
+<Card title="Private Sharing" icon="lock">
+  - Recipients must have a Deni AI account
+  - Only specified users can access the conversation
+  - Owner controls the recipient list
+  - Protected from public access
+</Card>
+
+**When to use:**
+- Sharing sensitive or confidential conversations
+- Collaborating within a team
+- Getting feedback from specific individuals
+- Maintaining privacy while sharing
+
+## Managing Recipients (Private Shares)
+
+For private shares, you can control exactly who has access:
+
+<Tabs>
+  <Tab title="Add Recipients">
+    Add users to your private share by email:
+    
+    ```typescript
+    // Via tRPC
+    const result = await trpc.share.addRecipient.mutate({
+      chatId: "chat-id",
+      recipientEmail: "user@example.com"
+    });
+    ```
+    
+    <Note>
+    Recipients must have an existing Deni AI account with a verified email address.
+    </Note>
+  </Tab>
+  
+  <Tab title="Remove Recipients">
+    Revoke access from specific users:
+    
+    ```typescript
+    // Via tRPC
+    await trpc.share.removeRecipient.mutate({
+      chatId: "chat-id",
+      recipientId: "user-id"
+    });
+    ```
+    
+    Removed users immediately lose access to the shared chat.
+  </Tab>
+  
+  <Tab title="View Recipients">
+    Check who has access to your private share:
+    
+    ```typescript
+    // Via tRPC
+    const settings = await trpc.share.getShareSettings.query({
+      chatId: "chat-id"
+    });
+    
+    console.log(settings.recipients); // Array of users with access
+    ```
+  </Tab>
+</Tabs>
+
+## Forking Conversations
+
+When forking is enabled, recipients can create their own copy of your shared conversation.
+
+### What is Forking?
+
+Forking creates an independent copy of the conversation in the recipient's account. They can:
+- Continue the conversation with their own messages
+- Modify the forked conversation independently
+- Delete their fork without affecting your original
+
+<Info>
+Forked conversations are completely independent. Changes to the original chat do not affect forks, and vice versa.
+</Info>
+
+### Creating a Fork
+
+Recipients can fork a shared conversation (if allowed):
+
+```typescript
+// Via tRPC
+const forkedChat = await trpc.share.forkChat.mutate({
+  shareId: "share-id"
+});
+
+// Returns the new chat with title: "Original Title (Forked)"
+```
+
+<Warning>
+Forking is only available if:
+1. The share owner has enabled the "Allow Fork" option
+2. The user is authenticated (for public shares) or has access (for private shares)
+</Warning>
+
+## Viewing Shared Chats
+
+### Accessing Shared Chats
+
+Navigate to a shared chat using the share URL:
+```
+https://your-domain.com/shared/[share-id]
+```
+
+The viewer sees:
+- Complete conversation history
+- Message timestamps
+- AI model information
+- Share owner's name and avatar
+- Fork button (if forking is enabled)
+
+### Your Shared Chats
+
+View all chats you've shared from the Settings > Sharing page:
+
+```typescript
+// Get all your shares
+const myShares = await trpc.share.getMyShares.query();
+```
+
+Each entry shows:
+- Chat title
+- Visibility status (public/private)
+- Creation date
+- Fork permissions
+- Recipient list (for private shares)
+
+### Chats Shared With You
+
+View conversations others have shared with you:
+
+```typescript
+// Get chats shared with you
+const sharedWithMe = await trpc.share.getSharedWithMe.query();
+```
+
+## Managing Your Shares
+
+<CardGroup cols={2}>
+  <Card title="Update Settings" icon="gear">
+    Modify visibility and fork permissions for existing shares at any time.
+  </Card>
+  
+  <Card title="Delete Shares" icon="trash">
+    Remove a share to revoke all access. The share link becomes invalid immediately.
+  </Card>
+  
+  <Card title="Add/Remove Recipients" icon="users">
+    Control access to private shares by managing the recipient list.
+  </Card>
+  
+  <Card title="Monitor Access" icon="eye">
+    View share settings and recipient information from your sharing dashboard.
+  </Card>
+</CardGroup>
+
+## Database Schema
+
+Shares are stored in two tables:
+
+<Tabs>
+  <Tab title="chat_shares">
+    ```typescript
+    {
+      id: string,              // Unique share ID
+      chatId: string,          // Referenced chat ID
+      ownerId: string,         // User who created the share
+      visibility: enum,        // "public" | "private"
+      allowFork: boolean,      // Enable/disable forking
+      createdAt: timestamp,
+      updatedAt: timestamp
+    }
+    ```
+  </Tab>
+  
+  <Tab title="chat_share_recipients">
+    ```typescript
+    {
+      id: string,              // Recipient record ID
+      shareId: string,         // Referenced share ID
+      recipientId: string,     // User with access
+      createdAt: timestamp
+    }
+    ```
+    
+    Only used for private shares.
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="When to use public vs. private sharing" icon="shield-check">
+    **Use public sharing for:**
+    - Educational content
+    - Public demonstrations
+    - Open knowledge sharing
+    - Community contributions
+    
+    **Use private sharing for:**
+    - Team collaboration
+    - Confidential conversations
+    - Client work
+    - Internal documentation
+  </Accordion>
+  
+  <Accordion title="Managing fork permissions" icon="code-fork">
+    **Enable forking when:**
+    - Sharing templates or examples
+    - Encouraging experimentation
+    - Building on shared conversations
+    
+    **Disable forking when:**
+    - Sharing proprietary prompts
+    - Protecting intellectual property
+    - Preventing unauthorized copies
+  </Accordion>
+  
+  <Accordion title="Security considerations" icon="lock">
+    - Review conversations before sharing to avoid exposing sensitive information
+    - Use private shares for confidential content
+    - Regularly audit your active shares
+    - Revoke access promptly when needed
+    - Remember that forked conversations are independent copies
+  </Accordion>
+  
+  <Accordion title="Recipient management" icon="user-group">
+    - Add recipients by their registered email addresses
+    - Recipients must have Deni AI accounts
+    - Remove access immediately when collaboration ends
+    - Monitor the recipient list regularly
+    - Consider team organizations for broader sharing needs
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<Accordion title="Share link not working" icon="link-slash">
+  **Possible causes:**
+  - Share was deleted by the owner
+  - You don't have access (for private shares)
+  - Invalid share ID in the URL
+  
+  **Solutions:**
+  - Verify the link is complete and correct
+  - Contact the share owner to request access
+  - Ensure you're logged in (for private shares)
+</Accordion>
+
+<Accordion title="Cannot add recipient" icon="user-xmark">
+  **Possible causes:**
+  - Recipient email not registered
+  - Recipient already has access
+  - Trying to add yourself
+  
+  **Solutions:**
+  - Verify the recipient has a Deni AI account
+  - Check the current recipient list
+  - Ask the recipient to sign up first
+</Accordion>
+
+<Accordion title="Fork button not appearing" icon="code-branch">
+  **Possible causes:**
+  - Forking is disabled by the owner
+  - You're not authenticated
+  
+  **Solutions:**
+  - Request the owner to enable forking
+  - Sign in to your account
+</Accordion>
+
+## API Reference
+
+All sharing operations are available via tRPC:
+
+```typescript
+// Create or update a share
+trpc.share.createShare({ chatId, visibility, allowFork })
+
+// Get share settings
+trpc.share.getShareSettings({ chatId })
+
+// Delete a share
+trpc.share.deleteShare({ chatId })
+
+// Add recipient (private shares)
+trpc.share.addRecipient({ chatId, recipientEmail })
+
+// Remove recipient
+trpc.share.removeRecipient({ chatId, recipientId })
+
+// Get shared chat (public procedure)
+trpc.share.getSharedChat({ shareId })
+
+// Fork a shared chat
+trpc.share.forkChat({ shareId })
+
+// View your shares
+trpc.share.getMyShares()
+
+// View chats shared with you
+trpc.share.getSharedWithMe()
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Team Collaboration" icon="users" href="/features/team-collaboration">
+    Learn about organization-level sharing and collaboration
+  </Card>
+  
+  <Card title="Chat Interface" icon="messages" href="/features/chat-interface">
+    Explore other chat features and conversation management
+  </Card>
+</CardGroup>

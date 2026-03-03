@@ -37,6 +37,7 @@
               "features/chat-interface",
               "features/ai-providers",
               "features/custom-models",
+              "features/chat-sharing",
               "features/team-collaboration"
             ]
           },
