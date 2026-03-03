@@ -1,0 +1,83 @@
+{
+  "projectType": "saas",
+  "projectName": "Deni AI",
+  "projectDescription": "AI chatbot platform providing free access to multiple AI models including GPT, Claude, Gemini, and more",
+  "theme": "palm",
+  "primaryColor": "#6366f1",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/chat-interface",
+              "features/ai-providers",
+              "features/custom-models",
+              "features/team-collaboration"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/environment-variables",
+              "configuration/database-setup",
+              "configuration/authentication"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/api-keys",
+              "advanced/billing-subscriptions",
+              "advanced/usage-limits",
+              "advanced/self-hosting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api-reference/overview",
+              "api-reference/chat",
+              "api-reference/authentication"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-provider AI chat (OpenAI, Anthropic, Google, xAI, OpenRouter, Groq)",
+    "User authentication with OAuth and passkeys",
+    "Team collaboration and organization management",
+    "Custom AI models and provider settings",
+    "Stripe billing and subscription management",
+    "Usage tracking and rate limiting",
+    "API key management for programmatic access",
+    "Database migrations with Drizzle ORM",
+    "Internationalization (English and Japanese)"
+  ],
+  "publicApiSurface": [
+    "POST /api/chat - Stream chat completions with AI models",
+    "POST /api/auth/[...all] - Authentication endpoints (better-auth)",
+    "POST /api/stripe/webhook - Stripe webhook handler",
+    "GET /api/image/* - Image upload and processing",
+    "tRPC routers: chat, billing, apiKeys, providers, migration, organization, share"
+  ]
+}
