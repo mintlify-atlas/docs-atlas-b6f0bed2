@@ -1,0 +1,250 @@
+---
+title: API Keys
+description: Create and manage API keys for programmatic access to Deni AI
+---
+
+API keys allow you to authenticate requests to Deni AI programmatically, enabling integrations with browser extensions (like Flixa) and other custom applications.
+
+## Creating an API Key
+
+API keys can be created from the Settings page in your Deni AI dashboard.
+
+<Steps>
+  <Step title="Navigate to API Keys Settings">
+    Go to Settings > API Keys in your Deni AI dashboard.
+  </Step>
+  
+  <Step title="Create New Key">
+    Click the "Create" button and provide a descriptive name for your key (e.g., "Flixa Extension", "Production API").
+    
+    <Note>
+      You can create up to 5 API keys per account.
+    </Note>
+  </Step>
+  
+  <Step title="Copy Your Key">
+    Your API key will be displayed **only once**. Copy it immediately and store it securely.
+    
+    <Warning>
+      API keys are prefixed with `deni_` and cannot be recovered after creation. If you lose a key, you must revoke it and create a new one.
+    </Warning>
+  </Step>
+</Steps>
+
+## Using API Keys
+
+### Authentication
+
+API keys use Bearer token authentication. Include your key in the `Authorization` header:
+
+```bash
+curl -X POST https://deniai.app/api/chat \
+  -H "Authorization: Bearer deni_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "chat-123",
+    "model": "openai/gpt-4o",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Hello, Deni!"
+      }
+    ]
+  }'
+```
+
+### Key Format
+
+All Deni AI API keys follow this format:
+
+- **Prefix**: `deni_`
+- **Length**: 44 characters total (prefix + 40 hex characters)
+- **Example**: `deni_a1b2c3d4e5f6...` (40 hex chars after prefix)
+
+### Storage and Security
+
+API keys are stored securely in the database:
+
+- Keys are hashed using **SHA-256** before storage
+- Only the first 13 characters (`deni_` + 8 hex chars) are stored as plaintext for display
+- The full key is never retrievable after creation
+
+## Key Management
+
+### Viewing Active Keys
+
+In the API Keys settings page, you can view:
+
+- **Key Name**: The descriptive name you provided
+- **Key Prefix**: First 13 characters (e.g., `deni_a1b2c3d4`)
+- **Created Date**: When the key was generated
+- **Last Used**: Most recent successful authentication
+- **Expiration**: Optional expiration date (if set)
+
+### Revoking Keys
+
+Revoke a key immediately if:
+
+- It has been compromised or exposed
+- You no longer need the integration
+- You're rotating keys for security
+
+<Warning>
+  Revoking a key is **immediate and irreversible**. Any applications using the key will stop working instantly.
+</Warning>
+
+To revoke a key:
+
+1. Click the trash icon next to the key in your API Keys settings
+2. Confirm the revocation
+3. Update any applications that were using the key
+
+### Key Expiration
+
+Keys can optionally have an expiration date. Expired keys:
+
+- Return a `401 Unauthorized` error with message "API key has expired"
+- Must be revoked and recreated
+- Are automatically rejected during authentication
+
+## Rate Limits
+
+API key requests are subject to the same rate limits as regular user sessions:
+
+- **30 requests per minute** per user
+- Rate limit applies across all API keys for a single user
+- Exceeded limits return `429 Too Many Requests` with a `Retry-After` header
+
+```json
+{
+  "error": "Too many requests. Please slow down."
+}
+```
+
+## Usage Limits
+
+API keys consume the same usage quotas as your subscription plan:
+
+| Plan | Basic Messages | Premium Messages |
+|------|----------------|------------------|
+| Free | 500/month | 50/month |
+| Plus | 1,500/month | 400/month |
+| Pro  | 3,000/month | 800/month |
+
+When limits are exceeded, requests return:
+
+```json
+{
+  "error": "You've hit the usage limit for your plan.",
+  "reason": "usage_limit"
+}
+```
+
+<Note>
+  Pro users can enable **Max Mode** to continue making requests beyond their quota with per-message billing.
+</Note>
+
+## Security Best Practices
+
+<Warning>
+  **Never** commit API keys to version control or expose them in client-side code.
+</Warning>
+
+### Recommended Practices
+
+1. **Use Environment Variables**
+   ```bash
+   # .env (never commit this file)
+   DENI_API_KEY=deni_your_key_here
+   ```
+
+2. **Rotate Keys Regularly**
+   - Create a new key
+   - Update all integrations
+   - Revoke the old key
+
+3. **Use Descriptive Names**
+   - Name keys by their purpose: "Production API", "Staging Server", "CI/CD Pipeline"
+   - This makes it easier to identify and rotate keys
+
+4. **Monitor Usage**
+   - Check the "Last Used" timestamp regularly
+   - Revoke unused keys immediately
+
+5. **Limit Key Scope**
+   - Create separate keys for different environments (dev, staging, production)
+   - Use one key per integration for easier management
+
+## Implementation Details
+
+### Authentication Flow
+
+The authentication process (from `src/app/api/chat/route.ts`):
+
+1. Extract Bearer token from `Authorization` header
+2. Check if token starts with `deni_` prefix
+3. Hash the token using SHA-256
+4. Query database for matching `keyHash`
+5. Verify key has not expired
+6. Update `lastUsedAt` timestamp asynchronously
+7. Proceed with authenticated request
+
+### Database Schema
+
+API keys are stored in the `api_key` table:
+
+```typescript
+{
+  id: string;              // UUID primary key
+  userId: string;          // Foreign key to user
+  name: string;            // User-provided name
+  keyHash: string;         // SHA-256 hash (unique)
+  keyPrefix: string;       // First 13 chars for display
+  lastUsedAt: timestamp;   // Updated on each use
+  expiresAt: timestamp;    // Optional expiration
+  createdAt: timestamp;    // Creation timestamp
+}
+```
+
+## Error Responses
+
+### Invalid API Key
+
+```json
+{
+  "error": "Invalid API key"
+}
+```
+
+**Status**: `401 Unauthorized`
+
+### Expired API Key
+
+```json
+{
+  "error": "API key has expired"
+}
+```
+
+**Status**: `401 Unauthorized`
+
+### Missing Authorization
+
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Status**: `401 Unauthorized`
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Usage Limits" icon="gauge" href="/advanced/usage-limits">
+    Learn about usage quotas and rate limiting
+  </Card>
+  <Card title="Billing & Subscriptions" icon="credit-card" href="/advanced/billing-subscriptions">
+    Manage your subscription and billing
+  </Card>
+</CardGroup>

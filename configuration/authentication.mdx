@@ -1,0 +1,543 @@
+---
+title: Authentication
+description: Configure better-auth with OAuth providers, passkey authentication, magic links, and email verification
+---
+
+Deni AI uses [better-auth](https://better-auth.com/) for comprehensive authentication with support for multiple providers and methods.
+
+## Authentication Features
+
+The authentication system in `src/lib/auth.ts:23` provides:
+
+- Email and password authentication
+- OAuth providers (Google, GitHub)
+- Passkey/WebAuthn authentication
+- Magic link sign-in
+- Email verification
+- Two-factor authentication (2FA)
+- Anonymous sessions
+- Organization/team management
+- Rate limiting
+- CAPTCHA protection (Cloudflare Turnstile)
+- Have I Been Pwned integration
+
+## OAuth Providers
+
+### Google OAuth
+
+<Steps>
+  <Step title="Create Google Cloud Project">
+    1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+    2. Create a new project or select an existing one
+    3. Navigate to "APIs & Services" > "Credentials"
+  </Step>
+  
+  <Step title="Enable Google+ API">
+    1. Go to "APIs & Services" > "Library"
+    2. Search for "Google+ API"
+    3. Click "Enable"
+  </Step>
+  
+  <Step title="Create OAuth 2.0 Credentials">
+    1. Go to "Credentials" > "Create Credentials" > "OAuth client ID"
+    2. Choose "Web application"
+    3. Add authorized redirect URI:
+    ```
+    http://localhost:3000/api/auth/callback/google
+    ```
+    For production, add:
+    ```
+    https://yourdomain.com/api/auth/callback/google
+    ```
+  </Step>
+  
+  <Step title="Configure Environment Variables">
+    Add the credentials to your `.env` file:
+    ```env
+    GOOGLE_CLIENT_ID=123456789.apps.googleusercontent.com
+    GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxx
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  The Google OAuth configuration is in `src/lib/auth.ts:115`
+</Note>
+
+### GitHub OAuth
+
+<Steps>
+  <Step title="Create OAuth App">
+    1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+    2. Click "New OAuth App"
+    3. Fill in application details:
+       - **Application name**: Deni AI (or your app name)
+       - **Homepage URL**: `http://localhost:3000` (or your domain)
+       - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
+  </Step>
+  
+  <Step title="Get Credentials">
+    After creating the app:
+    1. Copy the **Client ID**
+    2. Generate a new **Client Secret**
+    3. Save both securely
+  </Step>
+  
+  <Step title="Configure Environment Variables">
+    Add to your `.env` file:
+    ```env
+    GITHUB_CLIENT_ID=Iv1.xxxxxxxxxxxx
+    GITHUB_CLIENT_SECRET=xxxxxxxxxxxx
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  The GitHub OAuth configuration is in `src/lib/auth.ts:120`
+</Note>
+
+## Email and Password Authentication
+
+Email/password authentication is enabled by default with optional email verification.
+
+### Configuration
+
+The email and password setup in `src/lib/auth.ts:29`:
+
+```ts
+emailAndPassword: {
+  enabled: true,
+  requireEmailVerification: !!resend,
+  sendResetPassword: async ({ user, url }) => {
+    // Send password reset email via Resend
+  }
+}
+```
+
+### Email Verification
+
+Email verification requires the `RESEND_API_KEY` environment variable:
+
+<Steps>
+  <Step title="Get Resend API Key">
+    1. Sign up at [Resend](https://resend.com/)
+    2. Verify your domain or use the test domain
+    3. Create an API key from the dashboard
+  </Step>
+  
+  <Step title="Configure Environment">
+    Add to `.env`:
+    ```env
+    RESEND_API_KEY=re_xxxxxxxxxxxx
+    ```
+  </Step>
+  
+  <Step title="Update Email Constants">
+    Edit `src/lib/constants.ts` to set your sender email:
+    ```ts
+    EMAIL_FROM = "Deni AI <noreply@yourdomain.com>";
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+  If `RESEND_API_KEY` is not set, email verification will be disabled, and users can sign in immediately after registration.
+</Warning>
+
+### Email Features
+
+When Resend is configured, the following email features are available:
+
+- **Email Verification**: Sent on sign-up (`src/lib/auth.ts:44`)
+- **Password Reset**: Sent when users request password reset (`src/lib/auth.ts:32`)
+- **Magic Links**: Passwordless authentication via email (`src/lib/auth.ts:100`)
+- **Organization Invitations**: Team invitation emails (`src/lib/auth.ts:76`)
+
+## Passkey Authentication
+
+Passkeys (WebAuthn) provide passwordless authentication using biometrics or security keys.
+
+### Setup
+
+Passkeys are enabled via the `passkey` plugin in `src/lib/auth.ts:62`:
+
+```ts
+import { passkey } from "@better-auth/passkey";
+
+plugins: [
+  passkey(),
+  // ...
+]
+```
+
+### Requirements
+
+- HTTPS connection (required for WebAuthn)
+- Modern browser with WebAuthn support
+- Biometric hardware (fingerprint, Face ID) or security key
+
+<Note>
+  Passkeys work in development on `localhost` without HTTPS.
+</Note>
+
+## Magic Link Authentication
+
+Magic links allow users to sign in by clicking a link sent to their email.
+
+### Configuration
+
+Magic links require `RESEND_API_KEY` and are configured in `src/lib/auth.ts:100`:
+
+```ts
+magicLink({
+  sendMagicLink: async ({ email, url }) => {
+    const template = emailTemplates.magicLink(url);
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: email,
+      subject: template.subject,
+      html: template.html,
+    });
+  },
+})
+```
+
+### User Flow
+
+1. User enters their email address
+2. System sends a magic link to the email
+3. User clicks the link
+4. User is automatically signed in
+
+## Two-Factor Authentication (2FA)
+
+2FA adds an extra layer of security with time-based one-time passwords (TOTP).
+
+### Setup
+
+Enabled via the `twoFactor` plugin in `src/lib/auth.ts:61`:
+
+```ts
+import { twoFactor } from "better-auth/plugins/two-factor";
+
+plugins: [
+  twoFactor(),
+  // ...
+]
+```
+
+### Features
+
+- TOTP (Google Authenticator, Authy, etc.)
+- Backup codes for account recovery
+- Rate limiting on 2FA attempts (`src/lib/auth.ts:135`)
+
+## Security Features
+
+### Cloudflare Turnstile (CAPTCHA)
+
+Protects against bots and automated attacks.
+
+<Steps>
+  <Step title="Get Turnstile Keys">
+    1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/)
+    2. Navigate to Turnstile
+    3. Create a new site
+    4. Copy the site key and secret key
+  </Step>
+  
+  <Step title="Configure Environment">
+    ```env
+    TURNSTILE_SECRET_KEY=0x4xxxxxxxxxxxx
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4xxxxxxxxxxxx
+    ```
+  </Step>
+</Steps>
+
+Configuration in `src/lib/auth.ts:93`:
+
+```ts
+captcha({
+  provider: "cloudflare-turnstile",
+  secretKey: env.TURNSTILE_SECRET_KEY,
+})
+```
+
+### Have I Been Pwned Integration
+
+Checks passwords against known data breaches.
+
+Enabled in `src/lib/auth.ts:63`:
+
+```ts
+import { haveIBeenPwned } from "better-auth/plugins";
+
+plugins: [
+  haveIBeenPwned(),
+  // ...
+]
+```
+
+This prevents users from using compromised passwords.
+
+### Rate Limiting
+
+Protects against brute force attacks with configurable rate limits (`src/lib/auth.ts:126`):
+
+```ts
+rateLimit: {
+  enabled: true,
+  window: 60, // 60 seconds
+  max: 100, // 100 requests per window
+  customRules: {
+    "/sign-in/*": {
+      window: 10,
+      max: 3, // Only 3 sign-in attempts per 10 seconds
+    },
+    "/two-factor/*": {
+      window: 10,
+      max: 3,
+    },
+  },
+}
+```
+
+## Session Management
+
+Session configuration in `src/lib/auth.ts:144`:
+
+```ts
+session: {
+  expiresIn: 60 * 60 * 24 * 7, // 7 days
+  updateAge: 60 * 60 * 24, // Refresh every 1 day
+}
+```
+
+- Sessions last 7 days
+- Session expiration is updated every 24 hours when the user is active
+- Sessions are stored in the database (not cookies)
+
+## Organization/Team Management
+
+Support for multi-tenant team workspaces.
+
+### Configuration
+
+Organization plugin in `src/lib/auth.ts:65`:
+
+```ts
+organization({
+  allowUserToCreateOrganization: true,
+  membershipLimit: 50,
+  organizationHooks: {
+    afterAcceptInvitation: async ({ organization }) => {
+      await updateTeamSeatCount(organization.id);
+    },
+    afterRemoveMember: async ({ organization }) => {
+      await updateTeamSeatCount(organization.id);
+    },
+  },
+  sendInvitationEmail: async (data) => {
+    // Send invitation via Resend
+  },
+})
+```
+
+### Features
+
+- Create and manage organizations
+- Invite members via email
+- Role-based access control
+- Automatic billing integration
+- Up to 50 members per organization
+
+## Anonymous Sessions
+
+Allow users to try the app without signing up.
+
+Enabled in `src/lib/auth.ts:60`:
+
+```ts
+import { anonymous } from "better-auth/plugins";
+
+plugins: [
+  anonymous(),
+  // ...
+]
+```
+
+Anonymous users can:
+- Use basic features without authentication
+- Convert to full accounts later
+- Have their data migrated when they sign up
+
+## Database Adapter
+
+Better-auth uses Drizzle ORM for database operations (`src/lib/auth.ts:25`):
+
+```ts
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+
+database: drizzleAdapter(db, {
+  provider: "pg",
+  schema,
+})
+```
+
+This provides type-safe database queries and automatic schema management.
+
+## API Routes
+
+The authentication API is exposed at `/api/auth/[...all]` in `src/app/api/auth/[...all]/route.ts`.
+
+### Available Endpoints
+
+- `POST /api/auth/sign-in/email` - Email/password sign-in
+- `POST /api/auth/sign-up/email` - Email/password sign-up
+- `GET /api/auth/sign-in/google` - Google OAuth redirect
+- `GET /api/auth/sign-in/github` - GitHub OAuth redirect
+- `POST /api/auth/sign-in/magic-link` - Send magic link
+- `POST /api/auth/passkey/register` - Register passkey
+- `POST /api/auth/passkey/authenticate` - Authenticate with passkey
+- `GET /api/auth/session` - Get current session
+- `POST /api/auth/sign-out` - Sign out
+
+## Client Usage
+
+The client-side auth helper is in `src/lib/auth-client.ts`:
+
+```ts
+import { createAuthClient } from "better-auth/react";
+
+export const authClient = createAuthClient({
+  baseURL: "http://localhost:3000",
+});
+```
+
+### Example Usage
+
+```tsx
+import { authClient } from "@/lib/auth-client";
+
+// Sign in with email
+await authClient.signIn.email({
+  email: "user@example.com",
+  password: "password",
+});
+
+// Sign in with Google
+await authClient.signIn.social({
+  provider: "google",
+});
+
+// Get current session
+const session = await authClient.getSession();
+
+// Sign out
+await authClient.signOut();
+```
+
+## Regenerating Auth Schema
+
+When better-auth is updated or configuration changes:
+
+<CodeGroup>
+
+```bash bun
+bun run auth:generate
+```
+
+```bash npm
+npm run auth:generate
+```
+
+```bash pnpm
+pnpm auth:generate
+```
+
+</CodeGroup>
+
+This regenerates `src/db/schema/auth-schema.ts` with the latest schema from better-auth.
+
+<Warning>
+  This command overwrites `auth-schema.ts`. Don't manually edit this file.
+</Warning>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Multiple Authentication Methods">
+    Offer users flexibility by enabling multiple sign-in options:
+    - OAuth for convenience (Google, GitHub)
+    - Email/password for control
+    - Magic links for passwordless
+    - Passkeys for security
+  </Accordion>
+  
+  <Accordion title="Enable Email Verification in Production">
+    Always use `RESEND_API_KEY` in production to enable email verification and prevent fake accounts.
+  </Accordion>
+  
+  <Accordion title="Configure Rate Limiting">
+    Adjust rate limits based on your needs. Stricter limits for authentication endpoints prevent brute force attacks.
+  </Accordion>
+  
+  <Accordion title="Use HTTPS in Production">
+    OAuth and passkeys require HTTPS. Always deploy with SSL/TLS certificates.
+  </Accordion>
+  
+  <Accordion title="Rotate Secrets Regularly">
+    Change `BETTER_AUTH_SECRET` and OAuth credentials periodically for security.
+  </Accordion>
+  
+  <Accordion title="Test OAuth Callbacks">
+    Ensure redirect URIs match exactly between your OAuth app configuration and `NEXT_PUBLIC_BETTER_AUTH_URL`.
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### OAuth Redirect Errors
+
+If OAuth sign-in fails:
+
+1. Verify `NEXT_PUBLIC_BETTER_AUTH_URL` matches your application URL
+2. Check that redirect URIs in OAuth app settings include `/api/auth/callback/{provider}`
+3. Ensure OAuth credentials are correct
+4. Check browser console for error messages
+
+### Email Not Sending
+
+If verification emails aren't sent:
+
+1. Verify `RESEND_API_KEY` is set
+2. Check `EMAIL_FROM` in `src/lib/constants.ts` is configured
+3. Verify your domain is verified in Resend (or use test domain)
+4. Check Resend dashboard for delivery logs
+
+### Session Expired
+
+If sessions expire too quickly:
+
+1. Check `session.expiresIn` in `src/lib/auth.ts:145`
+2. Ensure database connection is stable
+3. Verify session table exists in database
+
+### CAPTCHA Not Working
+
+If Turnstile fails:
+
+1. Verify both `TURNSTILE_SECRET_KEY` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY` are set
+2. Check that site key matches the domain
+3. Ensure Turnstile widget is properly rendered on the client
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Database Setup" icon="database" href="/configuration/database-setup">
+    Set up your database and run migrations
+  </Card>
+  <Card title="Environment Variables" icon="gear" href="/configuration/environment-variables">
+    Review all configuration options
+  </Card>
+</CardGroup>

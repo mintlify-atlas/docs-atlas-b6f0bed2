@@ -1,0 +1,396 @@
+---
+title: Chat Completions
+description: Send chat completion requests to AI models with streaming support
+---
+
+## Endpoint
+
+```
+POST /api/chat
+```
+
+Create a chat completion with support for streaming responses, multiple AI providers, reasoning modes, and tool usage (web search, image generation, video generation).
+
+## Authentication
+
+<ParamField header="Authorization" type="string">
+  Bearer token with your Deni API key (format: `Bearer deni_...`)
+  
+  If not provided, the endpoint will attempt to use session authentication from cookies.
+</ParamField>
+
+## Request Body
+
+<ParamField body="id" type="string" required>
+  Unique identifier for the chat conversation. This is used to track and update the chat history.
+</ParamField>
+
+<ParamField body="model" type="string" required>
+  Model identifier to use for the completion. Can be:
+  - Built-in model value (e.g., `"gpt-5.2"`, `"claude-sonnet-4.5"`, `"gemini-3-pro-preview"`)
+  - Custom model with `custom:` prefix (e.g., `"custom:model-id"`)
+  
+  See the models list for available options.
+</ParamField>
+
+<ParamField body="messages" type="array" default="[]">
+  Array of message objects in the Vercel AI SDK `UIMessage` format. Each message contains:
+  - `role`: `"user"` or `"assistant"`
+  - `content`: Message content (text, images, or structured data)
+  - `id`: Unique message identifier
+  
+  If empty, the conversation starts fresh.
+</ParamField>
+
+<ParamField body="reasoningEffort" type="enum" default="high">
+  Reasoning effort level for models that support extended thinking. Affects token budget and response quality.
+  
+  Options:
+  - `"low"` - 1024 thinking tokens (Anthropic), faster responses
+  - `"medium"` - 8192 thinking tokens (Anthropic), balanced
+  - `"high"` - 16000 thinking tokens (Anthropic), deepest reasoning
+  
+  Applied to:
+  - OpenAI: Sets `reasoningEffort` and `reasoningSummary: "detailed"`
+  - Anthropic: Sets thinking budget tokens
+  - Google: Sets `thinkingLevel` with `includeThoughts: true`
+  - OpenRouter: Enables reasoning with specified effort
+</ParamField>
+
+<ParamField body="webSearch" type="boolean" default="false">
+  **Deprecated field** - Included in schema but not actively used in current implementation.
+</ParamField>
+
+<ParamField body="video" type="boolean" default="false">
+  Enable video generation mode. When enabled:
+  - Forces the model to call the `video` tool exactly once
+  - Uses the user's message as the video generation prompt
+  - Model provides a short caption after generation
+  - Other tools are disabled
+</ParamField>
+
+<ParamField body="image" type="boolean" default="false">
+  Enable image generation mode. When enabled:
+  - Forces the model to call the `image` tool
+  - Other tools are disabled
+</ParamField>
+
+## Response
+
+The endpoint returns a streaming response using Server-Sent Events (SSE) in the Vercel AI SDK `UIMessageStream` format.
+
+<ResponseField name="messages" type="array">
+  Array of messages including the assistant's response(s)
+</ResponseField>
+
+<ResponseField name="sources" type="array">
+  Source citations when web search tools are used
+</ResponseField>
+
+<ResponseField name="reasoning" type="object">
+  Reasoning steps and thoughts from models that support extended thinking
+</ResponseField>
+
+<ResponseField name="toolCalls" type="array">
+  Tool invocations made during response generation (search, image, video)
+</ResponseField>
+
+### Response Stream Format
+
+The response is streamed as Server-Sent Events. Each event contains incremental updates:
+
+- Text deltas as the message is generated
+- Tool call invocations and results
+- Reasoning/thinking steps (for compatible models)
+- Final message completion
+
+## Error Responses
+
+<ResponseField name="error" type="string">
+  Human-readable error message
+</ResponseField>
+
+<ResponseField name="reason" type="string">
+  Machine-readable error code for programmatic handling. Possible values:
+  - `usage_limit` - Usage quota exceeded
+  - `byok` - BYOK configuration required but missing
+</ResponseField>
+
+### Error Status Codes
+
+**400 Bad Request**
+```json
+{
+  "error": "Invalid request body"
+}
+```
+Returned when:
+- Request body fails validation
+- Invalid messages format
+- Unknown model specified
+- BYOK endpoint not configured (with `reason: "byok"`)
+
+**401 Unauthorized**
+```json
+{
+  "error": "Invalid API key"
+}
+```
+or
+```json
+{
+  "error": "API key has expired"
+}
+```
+or
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**402 Payment Required**
+```json
+{
+  "error": "You've hit the usage limit for your plan.",
+  "reason": "usage_limit"
+}
+```
+
+**403 Forbidden**
+```json
+{
+  "error": "Premium models are not available for guest sessions."
+}
+```
+
+**429 Too Many Requests**
+```json
+{
+  "error": "Too many requests. Please slow down."
+}
+```
+Headers: `Retry-After: <seconds>`
+
+**500 Internal Server Error**
+```json
+{
+  "error": "Unable to check usage"
+}
+```
+
+## Examples
+
+### Basic Chat Completion
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://your-domain.com/api/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer deni_your_api_key" \
+  -d '{
+    "id": "chat-123",
+    "model": "gpt-5.2",
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is the capital of France?",
+        "id": "msg-1"
+      }
+    ]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-domain.com/api/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer deni_your_api_key'
+  },
+  body: JSON.stringify({
+    id: 'chat-123',
+    model: 'gpt-5.2',
+    messages: [
+      {
+        role: 'user',
+        content: 'What is the capital of France?',
+        id: 'msg-1'
+      }
+    ]
+  })
+});
+
+// Handle streaming response
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  
+  const chunk = decoder.decode(value);
+  console.log(chunk);
+}
+```
+
+```python Python
+import requests
+import json
+
+url = 'https://your-domain.com/api/chat'
+headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer deni_your_api_key'
+}
+data = {
+    'id': 'chat-123',
+    'model': 'gpt-5.2',
+    'messages': [
+        {
+            'role': 'user',
+            'content': 'What is the capital of France?',
+            'id': 'msg-1'
+        }
+    ]
+}
+
+response = requests.post(url, headers=headers, json=data, stream=True)
+
+for chunk in response.iter_content(chunk_size=None):
+    if chunk:
+        print(chunk.decode('utf-8'))
+```
+
+</CodeGroup>
+
+### High Reasoning Effort
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://your-domain.com/api/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer deni_your_api_key" \
+  -d '{
+    "id": "chat-456",
+    "model": "claude-sonnet-4.5",
+    "reasoningEffort": "high",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Solve this complex math problem: ...",
+        "id": "msg-2"
+      }
+    ]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-domain.com/api/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer deni_your_api_key'
+  },
+  body: JSON.stringify({
+    id: 'chat-456',
+    model: 'claude-sonnet-4.5',
+    reasoningEffort: 'high',
+    messages: [
+      {
+        role: 'user',
+        content: 'Solve this complex math problem: ...',
+        id: 'msg-2'
+      }
+    ]
+  })
+});
+```
+
+</CodeGroup>
+
+### Video Generation Mode
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://your-domain.com/api/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer deni_your_api_key" \
+  -d '{
+    "id": "chat-789",
+    "model": "gpt-5.2",
+    "video": true,
+    "messages": [
+      {
+        "role": "user",
+        "content": "A serene sunset over the ocean",
+        "id": "msg-3"
+      }
+    ]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-domain.com/api/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer deni_your_api_key'
+  },
+  body: JSON.stringify({
+    id: 'chat-789',
+    model: 'gpt-5.2',
+    video: true,
+    messages: [
+      {
+        role: 'user',
+        content: 'A serene sunset over the ocean',
+        id: 'msg-3'
+      }
+    ]
+  })
+});
+```
+
+</CodeGroup>
+
+## Model Selection
+
+### Built-in Models
+
+Some example models available (see constants for full list):
+
+- `gpt-5.2` - OpenAI GPT-5.2 with reasoning
+- `gpt-5.3-codex` - OpenAI GPT-5.3 Codex for coding
+- `claude-sonnet-4.5` - Anthropic Claude Sonnet 4.5 (premium)
+- `claude-opus-4.6` - Anthropic Claude Opus 4.6 (premium)
+- `gemini-3-pro-preview` - Google Gemini 3 Pro
+- `gemini-3-flash-preview` - Google Gemini 3 Flash
+- `grok-4-1-fast-reasoning` - xAI Grok with reasoning
+
+### Custom Models
+
+You can use custom OpenAI-compatible models by:
+1. Configuring a custom model in your account
+2. Using the model ID with `custom:` prefix: `"custom:your-model-id"`
+
+### Premium Models
+
+Models marked as premium (e.g., Claude Sonnet/Opus) have separate usage limits and are not available for anonymous/guest sessions.
+
+## Usage Tracking
+
+- Each request consumes usage quota based on the model category (basic/premium)
+- BYOK (Bring Your Own Key) users bypass usage limits
+- Usage is consumed atomically at request start to prevent race conditions
+- Anonymous users cannot access premium models
+
+## Notes
+
+- The endpoint automatically generates a chat title after the first exchange (if current title is "New Chat")
+- Responses are limited to 50 tool call steps maximum
+- API keys are updated with `lastUsedAt` timestamp on each successful request
+- The system prompt includes current date and usage guidelines

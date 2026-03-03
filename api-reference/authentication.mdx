@@ -1,0 +1,384 @@
+---
+title: Authentication
+description: Authentication endpoints and methods powered by better-auth
+---
+
+## Overview
+
+Deni AI uses [better-auth](https://www.better-auth.com/) for authentication, providing a comprehensive set of endpoints for user authentication, session management, and account security.
+
+All authentication endpoints are available at:
+
+```
+POST/GET /api/auth/[...all]
+```
+
+## Authentication Methods
+
+Deni AI supports multiple authentication methods:
+
+### Email & Password
+
+Traditional email and password authentication with:
+- Email verification (when RESEND_API_KEY is configured)
+- Password reset via email
+- Have I Been Pwned integration for password security checking
+
+### OAuth Social Providers
+
+**Google OAuth**
+- Provider: `google`
+- Requires: `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+
+**GitHub OAuth**
+- Provider: `github`
+- Requires: `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
+
+### Magic Link
+
+Passwordless authentication via email (when `RESEND_API_KEY` is configured):
+- One-click sign-in links sent to email
+- No password required
+- Secure time-limited tokens
+
+### Passkey (WebAuthn)
+
+Modern passwordless authentication using:
+- Biometric authentication (fingerprint, Face ID)
+- Hardware security keys
+- Platform authenticators
+
+### Anonymous Sessions
+
+Guest access without registration:
+- Instant access for trying the platform
+- Limited features (no premium models)
+- Can be converted to permanent accounts
+
+### Two-Factor Authentication (2FA)
+
+Additional security layer:
+- TOTP (Time-based One-Time Password)
+- Backup codes
+- Per-user optional enablement
+
+## API Keys for Programmatic Access
+
+For API access, generate API keys in your account:
+
+1. Keys must start with `deni_` prefix
+2. Include in requests: `Authorization: Bearer deni_your_key`
+3. Keys can have expiration dates
+4. Track last usage timestamp
+5. Can be revoked at any time
+
+### API Key Authentication Flow
+
+```javascript
+// Making authenticated requests
+fetch('https://your-domain.com/api/chat', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer deni_abc123...',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ /* request data */ })
+});
+```
+
+### API Key Validation
+
+When an API key is provided:
+1. System validates the `deni_` prefix
+2. Hashes the key and looks up in database
+3. Checks if key exists and hasn't expired
+4. Extracts user ID for request authorization
+5. Updates `lastUsedAt` timestamp asynchronously
+
+## Session Management
+
+### Session Configuration
+
+<ResponseField name="expiresIn" type="number">
+  7 days (604,800 seconds) - Sessions automatically expire after this period
+</ResponseField>
+
+<ResponseField name="updateAge" type="number">
+  1 day (86,400 seconds) - Session expiration is refreshed every 24 hours of activity
+</ResponseField>
+
+### Session Authentication
+
+For browser-based applications, sessions are managed via HTTP-only cookies:
+
+```javascript
+// better-auth client automatically handles session cookies
+import { authClient } from '@/lib/auth-client';
+
+// Sign in
+await authClient.signIn.email({
+  email: 'user@example.com',
+  password: 'password123'
+});
+
+// Session cookie is automatically set
+// Subsequent requests include session automatically
+```
+
+## Better-Auth Endpoints
+
+The `/api/auth/[...all]` catch-all route handles all better-auth endpoints. Common endpoints include:
+
+### Sign In/Sign Up
+
+```
+POST /api/auth/sign-in/email
+POST /api/auth/sign-up/email
+POST /api/auth/sign-in/social
+```
+
+### Session Management
+
+```
+GET  /api/auth/get-session
+POST /api/auth/sign-out
+```
+
+### Password Management
+
+```
+POST /api/auth/forget-password
+POST /api/auth/reset-password
+```
+
+### Email Verification
+
+```
+POST /api/auth/send-verification-email
+GET  /api/auth/verify-email
+```
+
+### Two-Factor Authentication
+
+```
+POST /api/auth/two-factor/enable
+POST /api/auth/two-factor/verify
+POST /api/auth/two-factor/disable
+```
+
+### Passkey Management
+
+```
+POST /api/auth/passkey/register
+POST /api/auth/passkey/authenticate
+GET  /api/auth/passkey/list
+POST /api/auth/passkey/delete
+```
+
+### Organization/Team Management
+
+```
+POST /api/auth/organization/create
+POST /api/auth/organization/invite-member
+POST /api/auth/organization/accept-invitation
+POST /api/auth/organization/remove-member
+```
+
+## Rate Limiting
+
+Authentication endpoints have strict rate limits:
+
+### Sign-In Endpoints
+- **Window**: 10 seconds
+- **Max Requests**: 3 requests
+- **Applies to**: `/sign-in/*` routes
+
+### Two-Factor Endpoints
+- **Window**: 10 seconds
+- **Max Requests**: 3 requests
+- **Applies to**: `/two-factor/*` routes
+
+### General Auth Endpoints
+- **Window**: 60 seconds
+- **Max Requests**: 100 requests
+- **Applies to**: All other auth endpoints
+
+## Email Integration
+
+When `RESEND_API_KEY` is configured, the following emails are sent:
+
+### Email Verification
+- Sent on sign-up
+- Auto sign-in after verification
+- Template: Branded verification link
+
+### Password Reset
+- Sent when user requests password reset
+- 1-hour expiration
+- Template: Branded reset button
+
+### Magic Link
+- Passwordless sign-in link
+- Time-limited token
+- Template: One-click sign-in button
+
+### Organization Invitations
+- Team member invitations
+- Includes inviter name and organization
+- Template: Accept invitation button
+
+## Security Features
+
+### Password Security
+
+<ResponseField name="Have I Been Pwned" type="plugin">
+  Checks passwords against known data breaches
+</ResponseField>
+
+<ResponseField name="Email Verification" type="optional">
+  Required when RESEND_API_KEY is configured
+</ResponseField>
+
+### CAPTCHA Protection
+
+<ResponseField name="Provider" type="Cloudflare Turnstile">
+  Protects against bots and automated attacks
+</ResponseField>
+
+<ResponseField name="Configuration" type="required">
+  Requires `TURNSTILE_SECRET_KEY` environment variable
+</ResponseField>
+
+### Bearer Token Support
+
+API key authentication using the bearer plugin:
+- Secure token-based authentication
+- Suitable for server-to-server communication
+- No session cookies required
+
+## Organization Features
+
+Team/organization management with:
+
+<ParamField name="allowUserToCreateOrganization" type="boolean" default="true">
+  Users can create their own organizations
+</ParamField>
+
+<ParamField name="membershipLimit" type="number" default="50">
+  Maximum members per organization
+</ParamField>
+
+### Organization Hooks
+
+Automatic seat count updates:
+- After accepting invitations
+- After removing members
+- Integrated with billing system
+
+## Environment Variables
+
+Required environment variables for authentication:
+
+### Core Authentication
+```bash
+BETTER_AUTH_SECRET=your-32-character-secret
+NEXT_PUBLIC_BETTER_AUTH_URL=https://your-domain.com
+```
+
+### OAuth Providers
+```bash
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+```
+
+### Email & Security
+```bash
+RESEND_API_KEY=your-resend-api-key  # Optional, enables email features
+TURNSTILE_SECRET_KEY=your-turnstile-secret
+```
+
+### Database
+```bash
+DATABASE_URL=postgresql://...
+```
+
+## Client Integration
+
+Use the better-auth client for browser applications:
+
+```typescript
+// src/lib/auth-client.ts
+import { createAuthClient } from "better-auth/react";
+
+export const authClient = createAuthClient({
+  baseURL: "http://localhost:3000"
+});
+```
+
+### Example Usage
+
+```typescript
+import { authClient } from '@/lib/auth-client';
+
+// Email sign in
+await authClient.signIn.email({
+  email: 'user@example.com',
+  password: 'password'
+});
+
+// Google OAuth
+await authClient.signIn.social({
+  provider: 'google'
+});
+
+// Get current session
+const session = await authClient.getSession();
+
+// Sign out
+await authClient.signOut();
+```
+
+## Server-Side Session Access
+
+In API routes or server components:
+
+```typescript
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+
+const headersList = await headers();
+const session = await auth.api.getSession({ headers: headersList });
+
+const userId = session?.session?.userId;
+const isAnonymous = Boolean(session?.user?.isAnonymous);
+```
+
+## Best Practices
+
+1. **Use API Keys for Programmatic Access**: Better suited for server-to-server and API clients
+2. **Use Sessions for Browser Apps**: Leverage HTTP-only cookies for web applications
+3. **Enable 2FA**: Encourage users to enable two-factor authentication
+4. **Rotate API Keys**: Regularly rotate API keys and set expiration dates
+5. **Monitor Rate Limits**: Implement exponential backoff for rate-limited requests
+6. **Validate on Server**: Always validate authentication server-side, never trust client data
+
+## Migration & Schema
+
+Authentication tables are managed by better-auth:
+
+```bash
+# Generate better-auth schema
+bun run auth:generate
+
+# This updates src/db/schema/auth-schema.ts
+```
+
+The schema includes tables for:
+- Users and accounts
+- Sessions
+- Verification tokens
+- Passkeys
+- Organizations and memberships
+- Two-factor authentication

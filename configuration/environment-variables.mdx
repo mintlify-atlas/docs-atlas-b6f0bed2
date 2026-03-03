@@ -1,0 +1,261 @@
+---
+title: Environment Variables
+description: Configure Deni AI with required and optional environment variables for database, authentication, AI providers, and more
+---
+
+Deni AI uses environment variables for configuration. Create a `.env` file in the root directory of your project with the following variables.
+
+## Required Variables
+
+These environment variables must be set for Deni AI to function properly.
+
+### Database
+
+<ParamField path="DATABASE_URL" type="string" required>
+  PostgreSQL database connection URL. Format: `postgresql://user:password@host:5432/database`
+  
+  We recommend using [Neon](https://neon.tech/) for serverless PostgreSQL hosting.
+</ParamField>
+
+### Application URL
+
+<ParamField path="NEXT_PUBLIC_BETTER_AUTH_URL" type="string" required>
+  The public URL of your application. Used for OAuth callbacks and email links.
+  
+  - Local development: `http://localhost:3000`
+  - Production: `https://yourdomain.com`
+</ParamField>
+
+### Authentication
+
+<ParamField path="BETTER_AUTH_SECRET" type="string" required>
+  A 32-character secret key for signing authentication tokens.
+  
+  Generate with:
+  ```bash
+  openssl rand -base64 32
+  ```
+</ParamField>
+
+<ParamField path="GOOGLE_CLIENT_ID" type="string" required>
+  Google OAuth client ID. Obtain from [Google Cloud Console](https://console.cloud.google.com/).
+</ParamField>
+
+<ParamField path="GOOGLE_CLIENT_SECRET" type="string" required>
+  Google OAuth client secret from Google Cloud Console.
+</ParamField>
+
+<ParamField path="GITHUB_CLIENT_ID" type="string" required>
+  GitHub OAuth client ID. Create at [GitHub Developer Settings](https://github.com/settings/developers).
+</ParamField>
+
+<ParamField path="GITHUB_CLIENT_SECRET" type="string" required>
+  GitHub OAuth client secret from GitHub Developer Settings.
+</ParamField>
+
+### AI Providers
+
+At least one AI provider API key is required for chat functionality.
+
+<ParamField path="GOOGLE_GENERATIVE_AI_API_KEY" type="string" required>
+  Google Generative AI (Gemini) API key. Get from [Google AI Studio](https://makersuite.google.com/app/apikey).
+</ParamField>
+
+<ParamField path="GROQ_API_KEY" type="string" required>
+  Groq API key for fast LLM inference. Sign up at [Groq](https://groq.com/).
+</ParamField>
+
+<ParamField path="OPENROUTER_API_KEY" type="string" required>
+  OpenRouter API key for accessing multiple AI models. Get from [OpenRouter](https://openrouter.ai/).
+</ParamField>
+
+### Security
+
+<ParamField path="TURNSTILE_SECRET_KEY" type="string" required>
+  Cloudflare Turnstile secret key for CAPTCHA verification. Create at [Cloudflare Dashboard](https://dash.cloudflare.com/).
+</ParamField>
+
+<ParamField path="NEXT_PUBLIC_TURNSTILE_SITE_KEY" type="string" required>
+  Cloudflare Turnstile site key (public). Used in client-side CAPTCHA widget.
+</ParamField>
+
+### Search
+
+<ParamField path="BRAVE_SEARCH_API_KEY" type="string" required>
+  Brave Search API key for web search functionality. Sign up at [Brave Search API](https://brave.com/search/api/).
+</ParamField>
+
+## Optional Variables
+
+### Billing (Stripe)
+
+<ParamField path="STRIPE_SECRET_KEY" type="string">
+  Stripe secret API key for payment processing. Get from [Stripe Dashboard](https://dashboard.stripe.com/).
+  
+  If not provided, billing features will be disabled unless you set `NEXT_PUBLIC_BILLING_DISABLED=true`.
+</ParamField>
+
+<ParamField path="STRIPE_WEBHOOK_SECRET" type="string">
+  Stripe webhook secret for verifying webhook events.
+  
+  Set up webhooks at: `{NEXT_PUBLIC_BETTER_AUTH_URL}/api/stripe/webhook`
+  
+  Required events:
+  - `checkout.session.completed`
+  - `customer.subscription.created`
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
+</ParamField>
+
+<ParamField path="NEXT_PUBLIC_BILLING_DISABLED" type="string">
+  Disable billing features entirely. Set to `true` or `1` to disable.
+  
+  When disabled, all features are available without payment.
+</ParamField>
+
+### Email
+
+<ParamField path="RESEND_API_KEY" type="string">
+  Resend API key for sending transactional emails (verification, password reset, magic links).
+  
+  If not provided:
+  - Email verification will be disabled
+  - Password reset emails won't be sent
+  - Magic link authentication will be unavailable
+  - Organization invitations won't be sent via email
+  
+  Get your API key from [Resend](https://resend.com/).
+</ParamField>
+
+## Example Configuration
+
+<CodeGroup>
+
+```env Development
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/deni_dev
+
+# App URL
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+
+# Authentication
+BETTER_AUTH_SECRET=your-32-character-secret-here-xxx
+GOOGLE_CLIENT_ID=123456789.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxx
+GITHUB_CLIENT_ID=Iv1.xxxxxxxxxxxx
+GITHUB_CLIENT_SECRET=xxxxxxxxxxxx
+
+# AI Providers
+GOOGLE_GENERATIVE_AI_API_KEY=AIzaSyxxxxxxxxxx
+GROQ_API_KEY=gsk_xxxxxxxxxxxx
+OPENROUTER_API_KEY=sk-or-xxxxxxxxxxxx
+
+# Search
+BRAVE_SEARCH_API_KEY=BSAxxxxxxxxxxxx
+
+# Security
+TURNSTILE_SECRET_KEY=0x4xxxxxxxxxxxx
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4xxxxxxxxxxxx
+
+# Billing (optional)
+STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxx
+
+# Email (optional)
+RESEND_API_KEY=re_xxxxxxxxxxxx
+```
+
+```env Production
+# Database
+DATABASE_URL=postgresql://user:password@db.neon.tech:5432/production
+
+# App URL
+NEXT_PUBLIC_BETTER_AUTH_URL=https://yourdomain.com
+
+# Authentication
+BETTER_AUTH_SECRET=production-32-character-secret-xx
+GOOGLE_CLIENT_ID=123456789.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-production-secret
+GITHUB_CLIENT_ID=Iv1.production
+GITHUB_CLIENT_SECRET=production-secret
+
+# AI Providers
+GOOGLE_GENERATIVE_AI_API_KEY=AIzaSy-production
+GROQ_API_KEY=gsk_production
+OPENROUTER_API_KEY=sk-or-production
+
+# Search
+BRAVE_SEARCH_API_KEY=BSA-production
+
+# Security
+TURNSTILE_SECRET_KEY=0x4-production-secret
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4-production-site
+
+# Billing
+STRIPE_SECRET_KEY=sk_live_production
+STRIPE_WEBHOOK_SECRET=whsec_production
+
+# Email
+RESEND_API_KEY=re_production
+```
+
+```env Minimal (No Billing)
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/deni
+
+# App URL
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+
+# Authentication
+BETTER_AUTH_SECRET=your-32-character-secret-here-xxx
+GOOGLE_CLIENT_ID=123456789.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxx
+GITHUB_CLIENT_ID=Iv1.xxxxxxxxxxxx
+GITHUB_CLIENT_SECRET=xxxxxxxxxxxx
+
+# AI Providers (at least one required)
+GOOGLE_GENERATIVE_AI_API_KEY=AIzaSyxxxxxxxxxx
+GROQ_API_KEY=gsk_xxxxxxxxxxxx
+OPENROUTER_API_KEY=sk-or-xxxxxxxxxxxx
+
+# Search
+BRAVE_SEARCH_API_KEY=BSAxxxxxxxxxxxx
+
+# Security
+TURNSTILE_SECRET_KEY=0x4xxxxxxxxxxxx
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4xxxxxxxxxxxx
+
+# Disable billing
+NEXT_PUBLIC_BILLING_DISABLED=true
+```
+
+</CodeGroup>
+
+## Validation
+
+Deni AI uses [@t3-oss/env-nextjs](https://env.t3.gg/) with Zod for environment variable validation. Invalid or missing required variables will cause the application to fail at startup with detailed error messages.
+
+The validation schema is defined in `src/env.ts:1`.
+
+## Security Best Practices
+
+<Warning>
+  Never commit your `.env` file to version control. Add it to `.gitignore`.
+</Warning>
+
+- Use different secrets for development and production
+- Rotate secrets regularly, especially after team member changes
+- Use environment-specific API keys (test keys for development)
+- Store production secrets in your deployment platform's secret manager
+- Never share secrets in chat, email, or screenshots
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Database Setup" icon="database" href="/configuration/database-setup">
+    Set up PostgreSQL and run migrations
+  </Card>
+  <Card title="Authentication" icon="shield-halved" href="/configuration/authentication">
+    Configure OAuth providers and auth settings
+  </Card>
+</CardGroup>

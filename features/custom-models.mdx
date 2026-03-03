@@ -1,0 +1,395 @@
+---
+title: Custom Models
+description: Add your own AI models using OpenAI-compatible endpoints and API keys
+---
+
+Deni AI allows you to bring your own AI models by configuring custom endpoints and API keys. This feature gives you maximum flexibility to use any OpenAI-compatible API while benefiting from Deni AI's interface.
+
+## Overview
+
+Custom models enable you to:
+
+<CardGroup cols={2}>
+  <Card title="Use Your Own Keys" icon="key">
+    Connect your personal API keys from OpenAI, Anthropic, Google, or other providers.
+  </Card>
+  <Card title="Add Custom Endpoints" icon="link">
+    Integrate OpenAI-compatible endpoints from any service or self-hosted solution.
+  </Card>
+  <Card title="Control Costs" icon="dollar-sign">
+    Use your own billing and avoid platform usage limits.
+  </Card>
+  <Card title="Access Any Model" icon="wand-magic-sparkles">
+    Connect to models not available in the default catalog.
+  </Card>
+</CardGroup>
+
+## Creating a Custom Model
+
+<Steps>
+  <Step title="Navigate to Settings">
+    Go to Settings and find the Custom Models section.
+  </Step>
+  <Step title="Add New Model">
+    Click "Add Custom Model" to open the configuration form.
+  </Step>
+  <Step title="Configure Model Details">
+    Fill in the required information:
+    - **Model Name**: Display name for your model
+    - **Model ID**: The API identifier (e.g., `gpt-4`, `claude-3-opus`)
+    - **Provider**: Select `openai_compatible` for custom endpoints
+    - **Description**: Optional description of the model
+  </Step>
+  <Step title="Set API Endpoint">
+    Provide the base URL for the OpenAI-compatible API endpoint.
+  </Step>
+  <Step title="Add API Key">
+    Enter your API key for authentication.
+  </Step>
+  <Step title="Configure Pricing (Optional)">
+    Set pricing information for usage tracking:
+    - Input price (per million tokens)
+    - Output price (per million tokens)
+    - Reasoning price (for reasoning-capable models)
+  </Step>
+  <Step title="Save and Test">
+    Save the model and test it in a new chat conversation.
+  </Step>
+</Steps>
+
+<Warning>
+API keys are stored securely and encrypted. Never share your API keys with others or commit them to version control.
+</Warning>
+
+## Model Configuration Options
+
+Custom models are stored in the database with the following schema:
+
+### Required Fields
+
+<Tabs>
+  <Tab title="Model ID">
+    ```typescript
+    modelId: string // Required
+    ```
+    
+    The identifier used by the API provider. Examples:
+    - `gpt-4-turbo`
+    - `claude-3-opus-20240229`
+    - `gemini-pro`
+    - `custom-model-v1`
+  </Tab>
+  
+  <Tab title="Name">
+    ```typescript
+    name: string // Required
+    ```
+    
+    Display name shown in the model selector. Make it descriptive and recognizable.
+  </Tab>
+  
+  <Tab title="Provider">
+    ```typescript
+    provider: string // Required, typically "openai_compatible"
+    ```
+    
+    For custom models, use `openai_compatible` as the provider type.
+  </Tab>
+</Tabs>
+
+### Optional Fields
+
+<Accordion title="Description">
+  ```typescript
+  description?: string
+  ```
+  
+  A brief description of the model's capabilities or use case. Displayed in the model selector.
+</Accordion>
+
+<Accordion title="Premium Flag">
+  ```typescript
+  premium: boolean // Default: false
+  ```
+  
+  Mark the model as premium if it requires special access or higher costs.
+</Accordion>
+
+<Accordion title="Pricing Information">
+  ```typescript
+  inputPriceMicros?: number     // Input cost in micro-dollars per token
+  outputPriceMicros?: number    // Output cost in micro-dollars per token
+  reasoningPriceMicros?: number // Reasoning cost (for reasoning models)
+  ```
+  
+  Set pricing to track usage costs. Prices are in micro-dollars (1/1,000,000 of a dollar).
+  
+  <Note>
+  Pricing is optional but helps track your API spending within Deni AI.
+  </Note>
+</Accordion>
+
+## Supported Providers
+
+### OpenAI-Compatible Endpoints
+
+Deni AI works with any API that follows the OpenAI API format:
+
+<CardGroup cols={2}>
+  <Card title="OpenAI" icon="openai">
+    Use your own OpenAI API key
+    ```
+    https://api.openai.com/v1
+    ```
+  </Card>
+  <Card title="Azure OpenAI" icon="microsoft">
+    Connect to Azure OpenAI Service
+    ```
+    https://{resource}.openai.azure.com
+    ```
+  </Card>
+  <Card title="Local LLMs" icon="server">
+    Self-hosted models via:
+    - LocalAI
+    - Ollama
+    - vLLM
+    - text-generation-webui
+  </Card>
+  <Card title="Other Providers" icon="cloud">
+    Any compatible service:
+    - Together AI
+    - Anyscale
+    - Perplexity
+    - Custom deployments
+  </Card>
+</CardGroup>
+
+## BYOK (Bring Your Own Key)
+
+BYOK allows you to use your own API keys for built-in providers:
+
+### Supported BYOK Providers
+
+<Tabs>
+  <Tab title="OpenAI">
+    Add your OpenAI API key to access GPT models using your own billing:
+    
+    1. Go to Settings > Provider Keys
+    2. Add OpenAI API key
+    3. Models will automatically use your key
+    
+    <Info>
+    BYOK for OpenAI bypasses usage limits and uses your OpenAI billing.
+    </Info>
+  </Tab>
+  
+  <Tab title="Anthropic">
+    Use your Anthropic API key for Claude models:
+    
+    1. Go to Settings > Provider Keys
+    2. Add Anthropic API key
+    3. Access Claude models with your billing
+  </Tab>
+  
+  <Tab title="Google">
+    Connect your Google AI Studio or Vertex AI credentials:
+    
+    1. Go to Settings > Provider Keys
+    2. Add Google API key
+    3. Use Gemini models on your account
+  </Tab>
+  
+  <Tab title="xAI">
+    Add your xAI API key for Grok models:
+    
+    1. Go to Settings > Provider Keys
+    2. Add xAI API key
+    3. Access Grok models directly
+  </Tab>
+</Tabs>
+
+### BYOK Benefits
+
+<CardGroup cols={3}>
+  <Card title="No Usage Limits" icon="infinity">
+    Bypass platform usage limits when using your own keys.
+  </Card>
+  <Card title="Direct Billing" icon="credit-card">
+    Pay providers directly based on your usage.
+  </Card>
+  <Card title="Full Access" icon="unlock">
+    Access all model features and latest versions.
+  </Card>
+</CardGroup>
+
+## Custom Model Management
+
+### Viewing Custom Models
+
+Your custom models appear in the model selector with a "Custom" badge, distinguishing them from built-in models.
+
+### Editing Models
+
+<Steps>
+  <Step title="Access Settings">
+    Navigate to Settings > Custom Models
+  </Step>
+  <Step title="Select Model">
+    Click on the model you want to edit
+  </Step>
+  <Step title="Update Configuration">
+    Modify any fields except the user ID and creation date
+  </Step>
+  <Step title="Save Changes">
+    Click Save to apply your updates
+  </Step>
+</Steps>
+
+### Deleting Models
+
+<Warning>
+Deleting a custom model is permanent and cannot be undone. Any conversations using this model will still be accessible, but you won't be able to send new messages with the deleted model.
+</Warning>
+
+## Database Schema
+
+Custom models are stored with the following structure:
+
+```typescript
+{
+  id: string              // Auto-generated UUID
+  userId: string          // Owner of the custom model
+  provider: string        // Typically "openai_compatible"
+  name: string           // Display name
+  modelId: string        // API model identifier
+  description?: string   // Optional description
+  premium: boolean       // Default: false
+  inputPriceMicros?: number
+  outputPriceMicros?: number
+  reasoningPriceMicros?: number
+  createdAt: timestamp   // Auto-generated
+  updatedAt: timestamp   // Auto-updated
+}
+```
+
+<Info>
+Each user can have multiple custom models. The combination of userId, provider, and modelId must be unique.
+</Info>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Test Thoroughly" icon="flask">
+    Always test custom models with simple queries before using them for important tasks.
+  </Card>
+  <Card title="Set Accurate Pricing" icon="calculator">
+    Configure pricing information to track your API costs accurately.
+  </Card>
+  <Card title="Use Descriptive Names" icon="tag">
+    Give your models clear, descriptive names to easily identify them in the selector.
+  </Card>
+  <Card title="Secure Your Keys" icon="shield">
+    Never share API keys. Rotate them regularly and revoke compromised keys immediately.
+  </Card>
+  <Card title="Monitor Usage" icon="chart-line">
+    Keep track of your custom model usage to avoid unexpected costs.
+  </Card>
+  <Card title="Document Models" icon="file-text">
+    Use the description field to note model capabilities, limitations, or specific use cases.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<Accordion title="Model not appearing in selector">
+  **Possible causes**:
+  - Model wasn't saved correctly
+  - Page needs to be refreshed
+  - Duplicate model configuration
+  
+  **Solutions**:
+  - Check Settings > Custom Models to verify the model exists
+  - Refresh the page
+  - Ensure the model ID is unique for your account
+</Accordion>
+
+<Accordion title="API key authentication failed">
+  **Possible causes**:
+  - Incorrect API key
+  - Key lacks necessary permissions
+  - Key has been revoked
+  
+  **Solutions**:
+  - Verify the API key is correct
+  - Check provider dashboard for key status
+  - Generate a new API key if needed
+</Accordion>
+
+<Accordion title="Connection errors">
+  **Possible causes**:
+  - Incorrect endpoint URL
+  - Network connectivity issues
+  - Provider API is down
+  
+  **Solutions**:
+  - Verify the endpoint URL format
+  - Test the endpoint with a tool like curl
+  - Check provider status page
+</Accordion>
+
+<Accordion title="Pricing not tracking correctly">
+  **Possible causes**:
+  - Pricing configured in wrong units
+  - Pricing fields left empty
+  
+  **Solutions**:
+  - Ensure prices are in micro-dollars per token
+  - Set pricing fields explicitly
+  - Contact support if issues persist
+</Accordion>
+
+## Advanced Configuration
+
+### Self-Hosted Models
+
+For self-hosted solutions using LocalAI, Ollama, or similar:
+
+<Steps>
+  <Step title="Set up local server">
+    Ensure your model server is running and accessible.
+  </Step>
+  <Step title="Configure endpoint">
+    Use your local URL (e.g., `http://localhost:8080/v1`).
+  </Step>
+  <Step title="Add model">
+    Create a custom model pointing to your local endpoint.
+  </Step>
+  <Step title="Test connection">
+    Verify the model responds correctly to requests.
+  </Step>
+</Steps>
+
+<Tip>
+Local models provide complete privacy and control but require technical setup and adequate hardware.
+</Tip>
+
+### Multiple Endpoints
+
+You can add multiple custom models pointing to different endpoints:
+
+- Different providers for different tasks
+- Production and staging endpoints
+- Various model versions for testing
+- Backup endpoints for reliability
+
+## Security Considerations
+
+<Warning>
+**Important Security Guidelines**:
+- API keys are stored encrypted in the database
+- Never expose keys in client-side code
+- Use environment variables for sensitive configuration
+- Regularly rotate API keys
+- Monitor for unauthorized usage
+- Set spending limits on provider dashboards
+</Warning>

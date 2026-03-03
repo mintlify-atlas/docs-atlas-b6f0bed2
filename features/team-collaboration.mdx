@@ -1,0 +1,557 @@
+---
+title: Team Collaboration
+description: Collaborate with your team using organizations, shared settings, and team billing
+---
+
+Deni AI's team collaboration features enable organizations to work together efficiently with shared resources, centralized billing, and member management.
+
+## Organizations
+
+Organizations provide a collaborative workspace for teams:
+
+<CardGroup cols={2}>
+  <Card title="Shared Workspace" icon="users">
+    Create a centralized space where team members can collaborate and share resources.
+  </Card>
+  <Card title="Member Management" icon="user-gear">
+    Invite team members, assign roles, and manage access permissions.
+  </Card>
+  <Card title="Unified Billing" icon="credit-card">
+    Consolidate billing for all team members under one subscription.
+  </Card>
+  <Card title="Team Settings" icon="sliders">
+    Configure shared settings, models, and provider keys for the entire team.
+  </Card>
+</CardGroup>
+
+## Creating an Organization
+
+<Steps>
+  <Step title="Access Organization Settings">
+    Navigate to Settings > Organizations in your Deni AI account.
+  </Step>
+  <Step title="Create New Organization">
+    Click "Create Organization" and provide:
+    - **Organization Name**: Your team or company name
+    - **Slug**: Unique URL-friendly identifier (e.g., `acme-corp`)
+    - **Logo** (optional): Upload an organization logo
+  </Step>
+  <Step title="Configure Initial Settings">
+    Set up basic organization preferences and billing information.
+  </Step>
+  <Step title="Invite Team Members">
+    Start inviting members to join your organization.
+  </Step>
+</Steps>
+
+<Info>
+The organization slug must be unique across all Deni AI organizations and cannot be changed after creation.
+</Info>
+
+## Organization Roles
+
+Deni AI supports role-based access control for organizations:
+
+<Tabs>
+  <Tab title="Owner">
+    **Full administrative access**
+    
+    Permissions:
+    - Manage organization settings
+    - Invite and remove members
+    - Assign and change roles
+    - Manage billing and subscriptions
+    - Delete the organization
+    - Configure provider keys
+    - Access all organization resources
+    
+    <Note>
+    The user who creates the organization automatically becomes the owner.
+    </Note>
+  </Tab>
+  
+  <Tab title="Admin">
+    **Administrative access with limitations**
+    
+    Permissions:
+    - Invite and remove members
+    - Assign roles (except owner)
+    - Manage some organization settings
+    - Configure shared resources
+    - View billing information
+    
+    Restrictions:
+    - Cannot delete the organization
+    - Cannot remove the owner
+    - Cannot change billing settings
+  </Tab>
+  
+  <Tab title="Member">
+    **Standard team member access**
+    
+    Permissions:
+    - Use organization resources
+    - Access shared models and settings
+    - Participate in team workflows
+    - View team members
+    
+    Restrictions:
+    - Cannot invite new members
+    - Cannot change organization settings
+    - Cannot access billing information
+    - Cannot remove other members
+  </Tab>
+</Tabs>
+
+## Inviting Team Members
+
+Grow your team by inviting new members:
+
+<Steps>
+  <Step title="Open Invitations">
+    Go to Organization Settings > Members > Invite
+  </Step>
+  <Step title="Enter Email Address">
+    Provide the email address of the person you want to invite
+  </Step>
+  <Step title="Select Role">
+    Choose the appropriate role: Member or Admin
+  </Step>
+  <Step title="Send Invitation">
+    Click "Send Invite" to email the invitation
+  </Step>
+  <Step title="Track Status">
+    Monitor invitation status (Pending, Accepted, Expired) in the Members panel
+  </Step>
+</Steps>
+
+### Invitation System
+
+The invitation system is managed through the database:
+
+```typescript
+{
+  id: string              // Unique invitation ID
+  organizationId: string  // Target organization
+  email: string          // Invitee's email
+  role: string           // Assigned role (member/admin)
+  status: string         // pending, accepted, expired
+  expiresAt: timestamp   // Invitation expiry
+  inviterId: string      // User who sent the invite
+  createdAt: timestamp
+}
+```
+
+<Warning>
+Invitations expire after a set period (typically 7 days). Expired invitations must be resent.
+</Warning>
+
+### Invitation Email
+
+Invited users receive an email with:
+
+- Organization name and logo
+- Name of the person who invited them
+- Accept invitation button
+- Expiration date
+- Information about Deni AI
+
+<Tip>
+Invited users who don't have a Deni AI account will be prompted to create one when accepting the invitation.
+</Tip>
+
+## Managing Members
+
+### Viewing Members
+
+See all organization members with:
+- Name and email
+- Current role
+- Join date
+- Active status
+
+### Changing Roles
+
+<Accordion title="Promote to Admin">
+  Owners can promote members to admin:
+  1. Select the member
+  2. Click "Change Role"
+  3. Select "Admin"
+  4. Confirm the change
+</Accordion>
+
+<Accordion title="Demote to Member">
+  Owners and admins can demote admins to members:
+  1. Select the admin
+  2. Click "Change Role"
+  3. Select "Member"
+  4. Confirm the change
+</Accordion>
+
+### Removing Members
+
+Owners and admins can remove members:
+
+1. Navigate to Members list
+2. Select the member to remove
+3. Click "Remove from Organization"
+4. Confirm the action
+
+<Warning>
+Removing a member immediately revokes their access to organization resources. This action cannot be undone, but the user can be re-invited.
+</Warning>
+
+## Team Billing
+
+Organizations have dedicated billing management:
+
+### Billing Structure
+
+<Tabs>
+  <Tab title="Organization Billing">
+    Each organization has its own billing record separate from personal billing:
+    
+    ```typescript
+    {
+      id: string
+      userId: string              // Billing admin
+      organizationId: string      // Links to organization
+      stripeCustomerId: string
+      stripeSubscriptionId: string
+      planId: string             // Current plan
+      priceId: string
+      status: string             // active, inactive, canceled
+      currentPeriodEnd: timestamp
+      // Max Mode settings
+      maxModeEnabled: boolean
+      maxModeUsageBasic: number
+      maxModeUsagePremium: number
+      // ... other billing fields
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Personal vs Team">
+    **Personal Billing**:
+    - Individual user subscriptions
+    - Personal usage limits
+    - Separate from organization
+    
+    **Team Billing**:
+    - Covers all organization members
+    - Shared usage pool
+    - Managed by organization owner
+    - Consolidated invoicing
+  </Tab>
+</Tabs>
+
+### Subscription Management
+
+<CardGroup cols={2}>
+  <Card title="Team Plans" icon="users-gear">
+    Subscribe your organization to team plans with:
+    - Shared usage limits
+    - Access to premium models
+    - Priority support
+    - Custom integrations
+  </Card>
+  
+  <Card title="Usage Pooling" icon="database">
+    Organization members share:
+    - Monthly token limits
+    - Premium model access
+    - Max Mode capabilities
+    - API rate limits
+  </Card>
+</CardGroup>
+
+### Max Mode for Teams
+
+Organizations can enable Max Mode for usage-based billing:
+
+<Accordion title="What is Max Mode?">
+  Max Mode provides unlimited usage with metered billing:
+  
+  - No hard usage limits
+  - Pay for what you use
+  - Separate tracking for basic and premium models
+  - Monthly billing based on actual consumption
+  
+  **Usage Tracking**:
+  ```typescript
+  maxModeUsageBasic: number    // Tokens used on basic models
+  maxModeUsagePremium: number  // Tokens used on premium models
+  ```
+</Accordion>
+
+<Accordion title="Enabling Max Mode">
+  Organization owners can enable Max Mode:
+  1. Go to Billing Settings
+  2. Navigate to Max Mode section
+  3. Review pricing information
+  4. Click "Enable Max Mode"
+  5. Confirm billing authorization
+  
+  <Info>
+  Max Mode requires an active Pro subscription and valid payment method.
+  </Info>
+</Accordion>
+
+<Accordion title="Max Mode Billing">
+  Billing cycles:
+  - Usage period tracked from activation
+  - Billed monthly via Stripe metered billing
+  - Itemized usage reports
+  - Separate line items for basic and premium usage
+  
+  The system tracks:
+  - `maxModePeriodStart`: Start of current billing period
+  - `stripeMeteredSubscriptionItemId`: Stripe subscription item for metered billing
+</Accordion>
+
+## Shared Resources
+
+Organizations can share resources across members:
+
+### Provider Keys
+
+Set up provider API keys at the organization level:
+
+<Steps>
+  <Step title="Access Provider Settings">
+    Navigate to Organization Settings > Provider Keys
+  </Step>
+  <Step title="Add Provider Key">
+    Select the provider (OpenAI, Anthropic, Google, xAI) and add the API key
+  </Step>
+  <Step title="Configure Access">
+    Set whether all members can use the key or restrict to admins
+  </Step>
+  <Step title="Save Configuration">
+    Save the key securely (encrypted in database)
+  </Step>
+</Steps>
+
+<Info>
+Organization-level provider keys are automatically used by all team members, bypassing individual BYOK requirements.
+</Info>
+
+### Custom Models
+
+Share custom models across your organization:
+
+- Configure once, available to all members
+- Centralized model management
+- Consistent model access across team
+- Simplified onboarding for new members
+
+### Settings Inheritance
+
+Organization settings cascade to members:
+
+1. **Provider configurations**: Shared API endpoints
+2. **Model access**: Consistent model availability
+3. **Usage limits**: Pooled from organization subscription
+4. **Billing**: Unified payment and invoicing
+
+## Active Organization
+
+Users can be members of multiple organizations:
+
+### Switching Organizations
+
+<Steps>
+  <Step title="Access Organization Switcher">
+    Click on the current organization name in the navigation
+  </Step>
+  <Step title="Select Organization">
+    Choose from your list of organizations or personal account
+  </Step>
+  <Step title="Context Updates">
+    The entire interface updates to reflect the selected organization's settings and resources
+  </Step>
+</Steps>
+
+The active organization is stored in your session:
+
+```typescript
+{
+  activeOrganizationId: string | null
+}
+```
+
+<Tip>
+Your personal account is always available alongside organization workspaces. Switch freely between personal and team contexts.
+</Tip>
+
+## Organization Management
+
+### Updating Organization Details
+
+<Accordion title="Change Organization Name">
+  Owners can update the organization name:
+  1. Go to Organization Settings > General
+  2. Edit the organization name
+  3. Save changes
+  
+  <Note>
+  Name changes are reflected immediately for all members.
+  </Note>
+</Accordion>
+
+<Accordion title="Update Logo">
+  Upload or change the organization logo:
+  1. Navigate to Organization Settings > General
+  2. Click on current logo or "Upload Logo"
+  3. Select new image file
+  4. Crop and adjust as needed
+  5. Save
+  
+  Logo appears in:
+  - Organization switcher
+  - Member invitation emails
+  - Team billing pages
+</Accordion>
+
+<Accordion title="Manage Metadata">
+  Organizations support custom metadata for integration purposes:
+  ```typescript
+  metadata: string // JSON-encoded custom data
+  ```
+  
+  Use metadata for:
+  - External system integration IDs
+  - Custom configuration
+  - Department/team categorization
+  - Usage tracking tags
+</Accordion>
+
+### Deleting an Organization
+
+<Warning>
+**Deleting an organization is permanent and irreversible.**
+
+This action will:
+- Remove all members
+- Cancel active subscriptions
+- Delete organization resources
+- Remove shared settings
+- Archive organization data
+
+Only organization owners can delete organizations.
+</Warning>
+
+<Steps>
+  <Step title="Navigate to Danger Zone">
+    Go to Organization Settings > Advanced > Delete Organization
+  </Step>
+  <Step title="Confirm Deletion">
+    Type the organization name to confirm
+  </Step>
+  <Step title="Final Confirmation">
+    Review the consequences and click "Delete Organization"
+  </Step>
+  <Step title="Process Deletion">
+    The system will:
+    - Cancel subscriptions
+    - Notify all members
+    - Archive data
+    - Remove organization
+  </Step>
+</Steps>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Role Assignment" icon="shield-check">
+    - Limit owner/admin roles to trusted team members
+    - Regularly audit member permissions
+    - Remove access for departing team members immediately
+  </Card>
+  
+  <Card title="Billing Management" icon="file-invoice-dollar">
+    - Set up billing alerts for usage thresholds
+    - Review monthly usage reports
+    - Monitor Max Mode consumption
+    - Keep payment methods up to date
+  </Card>
+  
+  <Card title="Resource Sharing" icon="share-nodes">
+    - Use organization-level API keys for shared access
+    - Document custom models for team understanding
+    - Establish naming conventions for shared resources
+  </Card>
+  
+  <Card title="Team Communication" icon="comments">
+    - Notify team before making major changes
+    - Document organization-specific workflows
+    - Train new members on organization setup
+    - Maintain contact information for all members
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<Accordion title="Cannot invite team members">
+  **Check**:
+  - You have owner or admin role
+  - Email address is valid
+  - Organization has available seats (if applicable)
+  - No existing invitation for that email
+</Accordion>
+
+<Accordion title="Member not receiving invitation">
+  **Possible causes**:
+  - Email in spam/junk folder
+  - Email address typo
+  - Email server blocking
+  
+  **Solutions**:
+  - Ask member to check spam folder
+  - Resend invitation with corrected email
+  - Use alternative email address
+</Accordion>
+
+<Accordion title="Billing issues">
+  **Common problems**:
+  - Payment method expired
+  - Insufficient funds
+  - Stripe authentication failed
+  
+  **Solutions**:
+  - Update payment method
+  - Contact billing support
+  - Check Stripe dashboard for details
+</Accordion>
+
+<Accordion title="Cannot access organization resources">
+  **Verify**:
+  - You're currently in the correct organization context
+  - Your role has necessary permissions
+  - Organization subscription is active
+  - Resources are properly configured
+</Accordion>
+
+## Advanced Features
+
+### API Access
+
+Organizations can use provider keys for API access:
+
+- Shared API keys across team
+- Centralized key rotation
+- Usage attribution by member
+- Team-wide rate limits
+
+### Usage Analytics
+
+Track organization-wide usage:
+
+- Per-member usage breakdown
+- Model usage distribution
+- Cost allocation
+- Trend analysis
+
+<Tip>
+Contact support for advanced analytics and reporting features for large teams.
+</Tip>

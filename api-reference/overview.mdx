@@ -1,0 +1,161 @@
+---
+title: API Overview
+description: Learn how to interact with the Deni AI REST API for chat completions and authentication
+---
+
+## Introduction
+
+The Deni AI API provides programmatic access to AI-powered chat completions with support for multiple language models, streaming responses, and advanced features like reasoning modes and tool usage.
+
+## Base URL
+
+All API requests should be made to:
+
+```
+https://your-domain.com/api
+```
+
+For local development:
+
+```
+http://localhost:3000/api
+```
+
+## Authentication
+
+Deni AI supports two authentication methods:
+
+### API Key Authentication (Recommended for API Access)
+
+Include your API key in the `Authorization` header using the Bearer scheme:
+
+```bash
+curl https://your-domain.com/api/chat \
+  -H "Authorization: Bearer deni_your_api_key_here"
+```
+
+API keys must:
+- Start with the `deni_` prefix
+- Be valid and not expired
+- Belong to an active user account
+
+### Session Authentication
+
+For browser-based applications, you can use session cookies obtained through the better-auth authentication flow. This method is automatically used when no API key is provided.
+
+See the [Authentication](/api-reference/authentication) page for detailed information on auth endpoints.
+
+## Rate Limits
+
+The API implements rate limiting to ensure fair usage:
+
+### Chat Endpoint
+- **Window**: 60 seconds
+- **Max Requests**: 30 requests per window
+- **Per**: User ID
+
+When rate limited, you'll receive a `429` status code with a `Retry-After` header indicating how many seconds to wait.
+
+### Authentication Endpoints
+- **Sign-in endpoints**: 3 requests per 10 seconds
+- **Two-factor endpoints**: 3 requests per 10 seconds
+- **General auth endpoints**: 100 requests per 60 seconds
+
+## Error Handling
+
+The API uses standard HTTP status codes and returns errors in JSON format:
+
+### Error Response Format
+
+```json
+{
+  "error": "Error message describing what went wrong",
+  "reason": "error_code" // Optional, specific error reason
+}
+```
+
+### Common HTTP Status Codes
+
+<ResponseField name="200" type="Success">
+  Request completed successfully
+</ResponseField>
+
+<ResponseField name="400" type="Bad Request">
+  Invalid request body, parameters, or model selection
+</ResponseField>
+
+<ResponseField name="401" type="Unauthorized">
+  Missing, invalid, or expired authentication credentials
+</ResponseField>
+
+<ResponseField name="402" type="Payment Required">
+  Usage limit reached for your plan (reason: `usage_limit`)
+</ResponseField>
+
+<ResponseField name="403" type="Forbidden">
+  Premium models not available for guest sessions
+</ResponseField>
+
+<ResponseField name="429" type="Too Many Requests">
+  Rate limit exceeded. Check the `Retry-After` header
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Server error occurred while processing the request
+</ResponseField>
+
+### Error Reasons
+
+Some errors include a `reason` field for programmatic handling:
+
+- `usage_limit` - User has exceeded their plan's usage quota
+- `byok` - Bring Your Own Key (BYOK) configuration required but missing
+
+## Usage Limits
+
+Deni AI enforces usage limits based on your plan:
+
+- **Basic models**: Standard usage limits apply
+- **Premium models**: Separate usage limits; not available for guest/anonymous sessions
+- **BYOK (Bring Your Own Key)**: Bypass usage limits by configuring your own API keys for supported providers
+
+When a usage limit is reached, the API returns:
+
+```json
+{
+  "error": "You've hit the usage limit for your plan.",
+  "reason": "usage_limit"
+}
+```
+
+## Streaming Responses
+
+The chat endpoint supports Server-Sent Events (SSE) for streaming responses. The response uses the Vercel AI SDK's `UIMessageStream` format, which includes:
+
+- Message chunks as they're generated
+- Tool calls and results
+- Reasoning steps (for reasoning-capable models)
+- Source citations (when web search is enabled)
+
+## Supported Providers
+
+Deni AI supports multiple AI providers:
+
+- **OpenAI** - GPT models with reasoning capabilities
+- **Anthropic** - Claude models (premium)
+- **Google** - Gemini models with thinking modes
+- **xAI** - Grok models
+- **Groq** - High-speed inference
+- **OpenRouter** - Multi-provider routing
+- **OpenAI-compatible** - Custom endpoints supporting OpenAI API format
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Chat Endpoint" icon="message" href="/api-reference/chat">
+    Learn how to send chat completion requests
+  </Card>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Explore authentication methods and endpoints
+  </Card>
+</CardGroup>

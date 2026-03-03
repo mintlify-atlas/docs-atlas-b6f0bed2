@@ -1,0 +1,552 @@
+---
+title: Installation
+description: Self-host Deni AI on your own infrastructure with this comprehensive setup guide
+---
+
+## Overview
+
+This guide covers everything you need to deploy Deni AI on your own infrastructure. Whether you're running it locally for development or deploying to production, these steps will get you up and running.
+
+<Note>
+  This guide is for self-hosting. If you want to use Deni AI as a hosted service, visit [deniai.app](https://deniai.app) instead.
+</Note>
+
+## Prerequisites
+
+Before you begin, ensure you have the following:
+
+<Steps>
+  <Step title="Runtime environment">
+    Install either Bun (recommended) or Node.js:
+
+    **Option 1: Bun (Recommended)**
+    ```bash
+    curl -fsSL https://bun.sh/install | bash
+    ```
+
+    **Option 2: Node.js 20+**
+    ```bash
+    # Using nvm
+    nvm install 20
+    nvm use 20
+    ```
+
+    Verify installation:
+    ```bash
+    bun --version
+    # or
+    node --version
+    ```
+  </Step>
+
+  <Step title="PostgreSQL database">
+    You'll need a PostgreSQL database. We recommend [Neon](https://neon.tech/) for serverless PostgreSQL:
+
+    1. Create a free account at [neon.tech](https://neon.tech/)
+    2. Create a new project
+    3. Copy the connection string (it will look like: `postgresql://user:password@host.neon.tech/database`)
+
+    **Alternative options:**
+    - [Supabase](https://supabase.com/) (PostgreSQL with extras)
+    - [Railway](https://railway.app/) (easy deployment with PostgreSQL)
+    - Local PostgreSQL installation
+    - [Amazon RDS](https://aws.amazon.com/rds/postgresql/)
+    - [Google Cloud SQL](https://cloud.google.com/sql/docs/postgres)
+  </Step>
+
+  <Step title="API keys for AI providers">
+    You need at least one AI provider API key. Get keys from:
+
+    <Tabs>
+      <Tab title="OpenAI">
+        1. Visit [platform.openai.com](https://platform.openai.com/)
+        2. Create an account or sign in
+        3. Go to API Keys section
+        4. Click "Create new secret key"
+        5. Copy your key (starts with `sk-`)
+
+        **Cost**: Pay-as-you-go pricing
+      </Tab>
+
+      <Tab title="Anthropic">
+        1. Visit [console.anthropic.com](https://console.anthropic.com/)
+        2. Create an account
+        3. Navigate to API Keys
+        4. Generate a new key
+        5. Copy your key (starts with `sk-ant-`)
+
+        **Cost**: Pay-as-you-go pricing
+      </Tab>
+
+      <Tab title="Google AI">
+        1. Visit [ai.google.dev](https://ai.google.dev/)
+        2. Get an API key from Google AI Studio
+        3. Copy your API key
+
+        **Cost**: Free tier available, then pay-as-you-go
+      </Tab>
+
+      <Tab title="Groq">
+        1. Visit [console.groq.com](https://console.groq.com/)
+        2. Create an account
+        3. Generate an API key
+        4. Copy your key (starts with `gsk-`)
+
+        **Cost**: Free tier available
+      </Tab>
+
+      <Tab title="OpenRouter">
+        1. Visit [openrouter.ai](https://openrouter.ai/)
+        2. Create an account
+        3. Go to Keys section
+        4. Create a new key
+        5. Copy your key (starts with `sk-or-`)
+
+        **Cost**: Pay-as-you-go with access to many models
+      </Tab>
+    </Tabs>
+
+    <Warning>
+      Keep your API keys secure! Never commit them to version control or share them publicly.
+    </Warning>
+  </Step>
+
+  <Step title="OAuth credentials (for authentication)">
+    Set up OAuth for user sign-in:
+
+    ### Google OAuth
+
+    1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+    2. Create a new project or select existing one
+    3. Enable the Google+ API
+    4. Navigate to **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
+    5. Configure the OAuth consent screen
+    6. Add authorized redirect URI:
+       - Development: `http://localhost:3000/api/auth/callback/google`
+       - Production: `https://yourdomain.com/api/auth/callback/google`
+    7. Copy the **Client ID** and **Client Secret**
+
+    ### GitHub OAuth
+
+    1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+    2. Click **New OAuth App**
+    3. Fill in the application details:
+       - **Application name**: Deni AI
+       - **Homepage URL**: `http://localhost:3000` (or your domain)
+       - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
+    4. Click **Register application**
+    5. Copy the **Client ID** and generate a **Client Secret**
+  </Step>
+</Steps>
+
+## Installation steps
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/teamzisty/deni-ai.git
+    cd deni-ai
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Using Bun (recommended):
+    ```bash
+    bun install
+    ```
+
+    Or using npm:
+    ```bash
+    npm install
+    ```
+  </Step>
+
+  <Step title="Set up environment variables">
+    Create a `.env` file in the root directory:
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    Edit the `.env` file with your configuration:
+
+    <CodeGroup>
+    ```bash Database configuration
+    # PostgreSQL connection URL from Neon or your database provider
+    DATABASE_URL=postgresql://user:password@host:5432/database
+    ```
+
+    ```bash App URL
+    # For development
+    NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+
+    # For production, use your actual domain
+    # NEXT_PUBLIC_BETTER_AUTH_URL=https://yourdomain.com
+    ```
+
+    ```bash Authentication secrets
+    # Generate a 32-character secret (see below)
+    BETTER_AUTH_SECRET=your-32-character-secret-here
+
+    # Google OAuth credentials
+    GOOGLE_CLIENT_ID=your-google-client-id
+    GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+    # GitHub OAuth credentials
+    GITHUB_CLIENT_ID=your-github-client-id
+    GITHUB_CLIENT_SECRET=your-github-client-secret
+    ```
+
+    ```bash AI provider keys (at least one required)
+    # OpenAI
+    OPENAI_API_KEY=sk-your-openai-key
+
+    # Anthropic (Claude)
+    ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
+
+    # Google AI (Gemini)
+    GOOGLE_GENERATIVE_AI_API_KEY=your-google-ai-key
+
+    # Groq
+    GROQ_API_KEY=gsk-your-groq-key
+
+    # OpenRouter
+    OPENROUTER_API_KEY=sk-or-your-openrouter-key
+    ```
+
+    ```bash Optional features
+    # Brave Search API for web search functionality
+    BRAVE_SEARCH_API_KEY=your-brave-search-key
+
+    # Cloudflare Turnstile (CAPTCHA)
+    TURNSTILE_SECRET_KEY=your-turnstile-secret
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY=your-turnstile-site-key
+
+    # Resend (for email functionality)
+    RESEND_API_KEY=your-resend-api-key
+
+    # Stripe (for billing - optional)
+    STRIPE_SECRET_KEY=sk_test_your-stripe-key
+    STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
+
+    # Disable billing entirely
+    NEXT_PUBLIC_BILLING_DISABLED=true
+    ```
+    </CodeGroup>
+
+    ### Generate BETTER_AUTH_SECRET
+
+    Generate a secure 32-character secret:
+
+    ```bash
+    openssl rand -base64 32
+    ```
+
+    Copy the output and use it as your `BETTER_AUTH_SECRET`.
+
+    <Warning>
+      All environment variables listed above are validated by `src/env.ts` using Zod. Missing required variables will cause startup failures.
+    </Warning>
+  </Step>
+
+  <Step title="Set up the database">
+    Run database migrations to create all necessary tables:
+
+    ### Generate migration files
+
+    ```bash
+    bun run db:generate
+    ```
+
+    This analyzes your schema files in `src/db/schema/` and creates migration files in the `migrations/` directory.
+
+    ### Apply migrations
+
+    ```bash
+    bun run db:migrate
+    ```
+
+    Or for development, you can push the schema directly:
+
+    ```bash
+    bun run db:push
+    ```
+
+    ### Generate better-auth schema
+
+    Create the authentication tables:
+
+    ```bash
+    bun run auth:generate
+    ```
+
+    This generates `src/db/schema/auth-schema.ts` with all authentication-related tables.
+
+    <Note>
+      The database includes these main tables:
+      - **Authentication**: users, sessions, accounts, verification tokens
+      - **Chats**: conversations and messages
+      - **Organizations**: teams and memberships
+      - **Provider Settings**: user AI provider preferences
+      - **Custom Models**: user-defined AI models
+      - **Billing**: subscription data (if enabled)
+      - **Usage**: API usage tracking
+      - **Share**: shared conversation links
+    </Note>
+  </Step>
+
+  <Step title="Run the development server">
+    Start the development server:
+
+    ```bash
+    bun dev
+    ```
+
+    Or with npm:
+
+    ```bash
+    npm run dev
+    ```
+
+    The application will be available at [http://localhost:3000](http://localhost:3000)
+
+    <Tip>
+      The dev server includes hot module replacement (HMR) for instant updates when you modify files.
+    </Tip>
+  </Step>
+</Steps>
+
+## Optional configuration
+
+### Stripe billing setup
+
+If you want to enable paid subscriptions:
+
+<Steps>
+  <Step title="Create Stripe account">
+    1. Sign up at [stripe.com](https://stripe.com/)
+    2. Get your API keys from the Dashboard
+    3. Add to `.env`:
+    ```bash
+    STRIPE_SECRET_KEY=sk_test_your-stripe-key
+    STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
+    ```
+  </Step>
+
+  <Step title="Set up webhook endpoint">
+    Configure Stripe webhooks:
+
+    - **Endpoint URL**: `https://yourdomain.com/api/stripe/webhook`
+    - **Events to listen for**:
+      - `checkout.session.completed`
+      - `customer.subscription.created`
+      - `customer.subscription.updated`
+      - `customer.subscription.deleted`
+  </Step>
+
+  <Step title="Local testing with Stripe CLI">
+    For local development:
+
+    ```bash
+    stripe listen --forward-to localhost:3000/api/stripe/webhook
+    ```
+  </Step>
+</Steps>
+
+To disable billing entirely:
+
+```bash .env
+NEXT_PUBLIC_BILLING_DISABLED=true
+```
+
+### Email configuration
+
+Edit `src/lib/constants.ts` to customize email settings:
+
+```typescript src/lib/constants.ts
+// Google Analytics ID (optional)
+export const GA_ID = "G-XXXXXXXXXX";
+
+// Email sender
+export const EMAIL_FROM = "Deni AI <noreply@yourdomain.com>";
+```
+
+### Adding or updating AI models
+
+To add new models or modify existing ones, edit `src/lib/constants.ts`:
+
+```typescript src/lib/constants.ts
+export const models = [
+  {
+    name: "GPT-5.2",
+    value: "gpt-5.2",
+    author: "openai",
+    features: ["reasoning", "smart", "fast"],
+  },
+  // Add your custom model here
+  {
+    name: "Your Custom Model",
+    value: "custom-model-id",
+    author: "openai_compatible",
+    features: ["fast"],
+  },
+];
+```
+
+## Available scripts
+
+Here are the most important npm scripts:
+
+| Command | Description |
+|---------|-------------|
+| `bun dev` | Start development server with HMR |
+| `bun run build` | Build for production |
+| `bun start` | Start production server |
+| `bun run lint` | Run oxlint linter |
+| `bun run format` | Format code with oxfmt |
+| `bun run db:generate` | Generate Drizzle migrations |
+| `bun run db:migrate` | Run database migrations |
+| `bun run db:push` | Push schema directly (dev only) |
+| `bun run auth:generate` | Regenerate auth schema |
+
+## Deployment
+
+### Vercel (Recommended)
+
+<Steps>
+  <Step title="Push to GitHub">
+    Push your code to a GitHub repository
+  </Step>
+
+  <Step title="Import in Vercel">
+    1. Go to [vercel.com](https://vercel.com/)
+    2. Click **New Project**
+    3. Import your repository
+  </Step>
+
+  <Step title="Configure environment variables">
+    Add all environment variables from your `.env` file in the Vercel dashboard
+  </Step>
+
+  <Step title="Deploy">
+    Click **Deploy** and Vercel will build and deploy your application
+  </Step>
+</Steps>
+
+### Other platforms
+
+Deni AI can be deployed to any platform that supports Next.js:
+
+<CardGroup cols={2}>
+  <Card title="Railway" icon="train">
+    One-click deploy with built-in PostgreSQL
+  </Card>
+  <Card title="Render" icon="server">
+    Deploy with automatic builds and free SSL
+  </Card>
+  <Card title="Fly.io" icon="plane">
+    Deploy close to your users globally
+  </Card>
+  <Card title="Cloud providers" icon="cloud">
+    AWS, GCP, or Azure with containerization
+  </Card>
+</CardGroup>
+
+**Requirements for all platforms:**
+- Set all required environment variables
+- Use PostgreSQL database (not SQLite)
+- Build command: `bun run build` (or `npm run build`)
+- Start command: `bun start` (or `npm start`)
+- Node.js 20+ if not using Bun
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Build failures with React Compiler">
+    Deni AI uses the React 19 compiler. If you encounter build errors:
+
+    1. Check your Node.js/Bun version (must be 20+)
+    2. Review hooks and side effects in recent changes
+    3. Ensure dependency arrays are correct
+    4. Check for shared mutable closures
+  </Accordion>
+
+  <Accordion title="Environment validation errors">
+    Error: "Missing required environment variable"
+
+    **Solution**: Ensure all required variables in `src/env.ts` are set in your `.env` file:
+    - `DATABASE_URL`
+    - `BETTER_AUTH_SECRET` (exactly 32 characters)
+    - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+    - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
+    - At least one AI provider API key
+    - Turnstile keys
+    - `NEXT_PUBLIC_BETTER_AUTH_URL`
+  </Accordion>
+
+  <Accordion title="Database connection errors">
+    Error: "Failed to connect to database"
+
+    **Solutions**:
+    1. Verify your `DATABASE_URL` is correct
+    2. Check if the database is accessible from your network
+    3. For Neon: ensure you're using the pooled connection string
+    4. Verify PostgreSQL version is 12+
+  </Accordion>
+
+  <Accordion title="OAuth redirect errors">
+    Error: "Redirect URI mismatch"
+
+    **Solution**: Ensure redirect URIs match exactly in OAuth provider settings:
+    - Development: `http://localhost:3000/api/auth/callback/[provider]`
+    - Production: `https://yourdomain.com/api/auth/callback/[provider]`
+
+    Replace `[provider]` with `google` or `github`
+  </Accordion>
+
+  <Accordion title="Migration errors">
+    Error: "Migration failed"
+
+    **Solutions**:
+    1. Drop all tables and start fresh (development only):
+       ```bash
+       bun run db:push
+       ```
+    2. Check migration files in `migrations/` directory
+    3. Manually verify schema in PostgreSQL
+    4. Ensure you ran `bun run auth:generate` before migrations
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Customize your instance"
+    icon="paintbrush"
+  >
+    Modify themes, branding, and UI components
+  </Card>
+  <Card
+    title="Configure AI providers"
+    icon="brain"
+  >
+    Add custom models and adjust provider settings
+  </Card>
+  <Card
+    title="Set up monitoring"
+    icon="chart-line"
+  >
+    Configure analytics and error tracking
+  </Card>
+  <Card
+    title="Enable advanced features"
+    icon="wand-magic-sparkles"
+  >
+    Set up image generation, web search, and more
+  </Card>
+</CardGroup>
+
+<Warning>
+  Remember to keep your dependencies updated and regularly backup your database in production.
+</Warning>

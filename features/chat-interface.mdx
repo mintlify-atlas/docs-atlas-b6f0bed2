@@ -1,0 +1,186 @@
+---
+title: Chat Interface
+description: Learn about Deni AI's intuitive chat interface with real-time streaming, code highlighting, and advanced conversation management
+---
+
+Deni AI's chat interface is designed to provide a seamless conversational experience with AI models. The interface supports real-time message streaming, rich content rendering, and comprehensive conversation management.
+
+## Core Features
+
+### Real-Time Message Streaming
+
+All AI responses stream in real-time, providing immediate feedback as the model generates content.
+
+<Info>
+Streaming allows you to see the AI's response as it's being generated, making conversations feel more natural and interactive.
+</Info>
+
+### Message Rendering
+
+The chat interface supports rich content rendering:
+
+<Tabs>
+  <Tab title="Markdown">
+    All messages are rendered with full Markdown support, including:
+    - **Bold** and *italic* text
+    - Headers and lists
+    - Blockquotes
+    - Links and inline formatting
+  </Tab>
+  <Tab title="Code Syntax Highlighting">
+    Code blocks feature syntax highlighting with support for multiple programming languages. The interface uses Shiki with dual themes:
+    - `github-light` for light mode
+    - `github-dark` for dark mode
+    
+    Code is automatically detected and highlighted based on the language specified.
+  </Tab>
+  <Tab title="Images">
+    The chat interface supports:
+    - **Image uploads**: Attach images to your messages for vision-capable models
+    - **Generated images**: AI-generated images with metadata (resolution, aspect ratio, model info)
+    - **Download options**: Save generated images directly from the chat
+  </Tab>
+  <Tab title="Videos">
+    For video-capable models:
+    - **Video generation**: Create videos from text prompts
+    - **Playback controls**: Native video player with full controls
+    - **Metadata display**: View resolution, aspect ratio, duration, and seed information
+    - **Download support**: Save generated videos locally
+  </Tab>
+</Tabs>
+
+### Conversation Management
+
+Efficiently manage your chat conversations:
+
+<CardGroup cols={2}>
+  <Card title="Auto-Save" icon="floppy-disk">
+    All conversations are automatically saved as you chat. No need to manually save your progress.
+  </Card>
+  <Card title="Conversation History" icon="clock-rotate-left">
+    Access all your past conversations from the sidebar. Conversations are sorted by most recent activity.
+  </Card>
+  <Card title="Conversation Titles" icon="heading">
+    Conversations are automatically titled based on the first message or you can rename them manually.
+  </Card>
+  <Card title="Delete & Clear" icon="trash">
+    Remove individual conversations or clear your entire chat history when needed.
+  </Card>
+</CardGroup>
+
+## Message Actions
+
+Each assistant message includes helpful actions:
+
+<Accordion title="Regenerate Response">
+  Don't like the AI's response? Click the regenerate button to get a new response using the same prompt and settings.
+  
+  <Note>
+  Regenerating uses the same model and configuration as the original message.
+  </Note>
+</Accordion>
+
+<Accordion title="Copy Message">
+  Quickly copy any assistant message to your clipboard with a single click.
+</Accordion>
+
+## Advanced Features
+
+### Chain of Thought
+
+For models with reasoning capabilities, the interface displays the AI's thought process:
+
+<Steps>
+  <Step title="Reasoning Display">
+    When a model uses chain-of-thought reasoning, you'll see a collapsible section showing the AI's internal reasoning steps.
+  </Step>
+  <Step title="Search Results">
+    When web search is enabled, view the sources the AI consulted, including:
+    - Search query results
+    - URLs accessed
+    - Number of results found
+  </Step>
+  <Step title="Thinking Indicator">
+    While the AI is thinking, a shimmer effect indicates active processing.
+  </Step>
+</Steps>
+
+### Web Search Integration
+
+Enable web search to let the AI access current information:
+
+- Real-time web search results
+- Source attribution with clickable links
+- Visual indicators for search progress
+- Integration with the chain of thought display
+
+<Tip>
+Web search is particularly useful for questions about current events, recent developments, or information that may not be in the model's training data.
+</Tip>
+
+### Source Citations
+
+When the AI references external sources, they're displayed in a dedicated sources section:
+
+- Clickable source links
+- Source titles and URLs
+- Badge showing number of sources cited
+- Organized presentation below the message
+
+## Error Handling
+
+The chat interface provides clear error messages when issues occur:
+
+<Warning>
+If an error occurs during message generation, you'll see a detailed error card with:
+- Error description
+- Possible causes
+- Suggested actions to resolve the issue
+</Warning>
+
+### Common Error Scenarios
+
+- **Network errors**: Connection issues with the AI service
+- **Rate limits**: Too many requests in a short time
+- **Invalid input**: Unsupported file types or content
+- **Model errors**: Issues with the selected AI model
+
+## Conversation Controls
+
+### Scroll Behavior
+
+The chat interface includes smart scrolling features:
+
+- **Auto-scroll**: Automatically scrolls to the latest message during streaming
+- **Scroll button**: Quickly jump to the bottom of long conversations
+- **Smooth transitions**: Animated scrolling for better UX
+
+### Stop Generation
+
+Stop the AI at any time during message generation:
+
+1. Click the stop button while a message is streaming
+2. The AI will immediately stop generating
+3. You can continue the conversation or regenerate
+
+<Info>
+Stopping generation still consumes usage credits for the tokens generated up to that point.
+</Info>
+
+## Mobile Experience
+
+The chat interface is fully responsive and optimized for mobile devices:
+
+- Touch-friendly controls
+- Optimized layout for smaller screens
+- Gesture support for navigation
+- Efficient rendering for performance
+
+## Keyboard Shortcuts
+
+<Tip>
+Use keyboard shortcuts for faster interaction:
+- **Enter**: Send message (or Shift+Enter for new line)
+- **Ctrl/Cmd + K**: Focus on model selector
+- **Esc**: Cancel current generation
+</Tip>

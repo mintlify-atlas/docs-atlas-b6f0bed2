@@ -1,0 +1,567 @@
+---
+title: Self-Hosting
+description: Deploy Deni AI on Vercel, Railway, or your own infrastructure
+---
+
+Deni AI is built with Next.js and can be deployed to any platform that supports Node.js or Bun. This guide covers deployment to popular platforms and production considerations.
+
+## Prerequisites
+
+Before deploying, ensure you have:
+
+- **PostgreSQL database** (Neon, Supabase, or self-hosted)
+- **Stripe account** (or billing disabled)
+- **OAuth credentials** (Google and/or GitHub)
+- **AI provider API keys** (at least one: OpenAI, Anthropic, Google, Groq, or OpenRouter)
+- **Domain name** (recommended for production)
+
+## Environment Variables
+
+All deployments require these environment variables (from `src/env.ts`):
+
+### Required Variables
+
+```env
+# Database
+DATABASE_URL=postgresql://user:password@host:5432/database
+
+# App URL (must match deployment URL)
+NEXT_PUBLIC_BETTER_AUTH_URL=https://your-domain.com
+
+# Authentication Secret (32 characters)
+BETTER_AUTH_SECRET=your-32-character-secret-here
+
+# OAuth Providers
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# AI Providers (at least one required)
+OPENAI_API_KEY=sk-your-openai-key
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
+GOOGLE_GENERATIVE_AI_API_KEY=your-google-ai-key
+GROQ_API_KEY=gsk-your-groq-key
+OPENROUTER_API_KEY=sk-or-your-openrouter-key
+```
+
+### Optional Variables
+
+```env
+# Stripe Billing (required unless disabled)
+STRIPE_SECRET_KEY=sk_live_your-stripe-key
+STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
+
+# Disable Billing (development only)
+NEXT_PUBLIC_BILLING_DISABLED=true
+
+# Search (optional)
+BRAVE_SEARCH_API_KEY=your-brave-search-key
+
+# Cloudflare Turnstile (CAPTCHA)
+TURNSTILE_SECRET_KEY=your-turnstile-secret
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your-turnstile-site-key
+```
+
+<Warning>
+  All environment variables are validated strictly using Zod. Missing or invalid values will cause startup failures.
+</Warning>
+
+### Generate Authentication Secret
+
+```bash
+openssl rand -base64 32
+```
+
+## Deployment Platforms
+
+<Tabs>
+  <Tab title="Vercel">
+    ### Deploy to Vercel
+
+    Vercel is the recommended deployment platform for Next.js applications.
+
+    <Steps>
+      <Step title="Connect Repository">
+        1. Push your code to GitHub
+        2. Go to [vercel.com](https://vercel.com)
+        3. Click "Import Project"
+        4. Select your repository
+      </Step>
+
+      <Step title="Configure Environment Variables">
+        In the Vercel dashboard, add all required environment variables:
+        
+        - Navigate to Settings > Environment Variables
+        - Add each variable from the list above
+        - Set appropriate values for production
+      </Step>
+
+      <Step title="Set Build Settings">
+        Vercel auto-detects Next.js projects. Verify these settings:
+        
+        - **Framework Preset**: Next.js
+        - **Build Command**: `bun run build` or `npm run build`
+        - **Output Directory**: `.next`
+        - **Install Command**: `bun install` or `npm install`
+      </Step>
+
+      <Step title="Deploy">
+        Click "Deploy" and wait for the build to complete.
+      </Step>
+
+      <Step title="Run Database Migrations">
+        After first deployment, run migrations:
+        
+        ```bash
+        # Install Vercel CLI
+        npm i -g vercel
+        
+        # Login
+        vercel login
+        
+        # Run migrations in production
+        vercel env pull .env.production
+        bun run db:migrate
+        ```
+        
+        Or use Vercel's deployment hooks to run migrations automatically.
+      </Step>
+
+      <Step title="Configure OAuth Redirect URIs">
+        Update OAuth provider settings with your Vercel domain:
+        
+        - **Google**: `https://your-domain.vercel.app/api/auth/callback/google`
+        - **GitHub**: `https://your-domain.vercel.app/api/auth/callback/github`
+      </Step>
+
+      <Step title="Set Up Stripe Webhooks">
+        Configure Stripe webhook endpoint:
+        
+        ```
+        https://your-domain.vercel.app/api/stripe/webhook
+        ```
+        
+        [See Stripe Webhook Setup →](/advanced/billing-subscriptions#setting-up-webhooks)
+      </Step>
+    </Steps>
+
+    ### Vercel-Specific Configuration
+
+    **Recommended settings** in `vercel.json`:
+
+    ```json
+    {
+      "buildCommand": "bun run build",
+      "framework": "nextjs",
+      "installCommand": "bun install"
+    }
+    ```
+
+    **Serverless Function Timeout**:
+
+    - Free/Hobby: 10 seconds
+    - Pro: 60 seconds (recommended for AI streaming)
+    - Enterprise: 900 seconds
+
+    <Note>
+      For long-running AI requests, upgrade to Vercel Pro or use Edge Runtime where possible.
+    </Note>
+  </Tab>
+
+  <Tab title="Railway">
+    ### Deploy to Railway
+
+    Railway provides simple deployment with built-in PostgreSQL.
+
+    <Steps>
+      <Step title="Create Railway Project">
+        1. Go to [railway.app](https://railway.app)
+        2. Click "New Project"
+        3. Select "Deploy from GitHub repo"
+        4. Choose your repository
+      </Step>
+
+      <Step title="Add PostgreSQL Database">
+        1. Click "+ New" in your project
+        2. Select "Database" > "PostgreSQL"
+        3. Railway will provision a database and provide `DATABASE_URL`
+      </Step>
+
+      <Step title="Configure Environment Variables">
+        In the Railway dashboard:
+        
+        1. Click on your service
+        2. Go to "Variables" tab
+        3. Add all required environment variables
+        4. Use `${{RAILWAY_STATIC_URL}}` or your custom domain for `NEXT_PUBLIC_BETTER_AUTH_URL`
+      </Step>
+
+      <Step title="Set Build Configuration">
+        Railway auto-detects build settings. Override if needed:
+        
+        - **Build Command**: `bun run build`
+        - **Start Command**: `bun start`
+      </Step>
+
+      <Step title="Deploy">
+        Railway will automatically deploy on every push to your main branch.
+      </Step>
+
+      <Step title="Run Database Migrations">
+        Use Railway's CLI or dashboard shell:
+        
+        ```bash
+        # Install Railway CLI
+        npm i -g @railway/cli
+        
+        # Login
+        railway login
+        
+        # Link project
+        railway link
+        
+        # Run migrations
+        railway run bun run db:migrate
+        ```
+      </Step>
+
+      <Step title="Configure Custom Domain">
+        1. Go to Settings > Networking
+        2. Add your custom domain
+        3. Update DNS records as instructed
+        4. Update `NEXT_PUBLIC_BETTER_AUTH_URL` to use custom domain
+      </Step>
+    </Steps>
+
+    ### Railway-Specific Notes
+
+    - Railway provides **persistent storage** in `/app` directory
+    - Use **Railway's PostgreSQL** for easy database management
+    - **Automatic HTTPS** on `.railway.app` domains
+    - **Zero-downtime deployments** by default
+  </Tab>
+
+  <Tab title="Docker">
+    ### Deploy with Docker
+
+    For self-hosted deployments on your own infrastructure.
+
+    <Steps>
+      <Step title="Create Dockerfile">
+        Create a `Dockerfile` in your project root:
+        
+        ```dockerfile
+        FROM oven/bun:1 AS base
+        
+        # Install dependencies only when needed
+        FROM base AS deps
+        WORKDIR /app
+        COPY package.json bun.lockb ./
+        RUN bun install --frozen-lockfile
+        
+        # Rebuild the source code only when needed
+        FROM base AS builder
+        WORKDIR /app
+        COPY --from=deps /app/node_modules ./node_modules
+        COPY . .
+        
+        # Set build-time environment variables
+        ARG NEXT_PUBLIC_BETTER_AUTH_URL
+        ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL
+        
+        RUN bun run build
+        
+        # Production image
+        FROM base AS runner
+        WORKDIR /app
+        
+        ENV NODE_ENV=production
+        
+        RUN addgroup --system --gid 1001 nodejs
+        RUN adduser --system --uid 1001 nextjs
+        
+        COPY --from=builder /app/public ./public
+        COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+        COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+        
+        USER nextjs
+        
+        EXPOSE 3000
+        
+        ENV PORT=3000
+        
+        CMD ["bun", "server.js"]
+        ```
+      </Step>
+
+      <Step title="Enable Standalone Output">
+        Add to `next.config.js`:
+        
+        ```javascript
+        module.exports = {
+          output: 'standalone',
+        };
+        ```
+      </Step>
+
+      <Step title="Create docker-compose.yml">
+        For local development or simple deployments:
+        
+        ```yaml
+        version: '3.8'
+        
+        services:
+          app:
+            build: .
+            ports:
+              - "3000:3000"
+            environment:
+              - DATABASE_URL=${DATABASE_URL}
+              - NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL}
+              # Add all other environment variables
+            depends_on:
+              - db
+          
+          db:
+            image: postgres:16
+            environment:
+              POSTGRES_USER: deni
+              POSTGRES_PASSWORD: password
+              POSTGRES_DB: deni_ai
+            volumes:
+              - postgres_data:/var/lib/postgresql/data
+            ports:
+              - "5432:5432"
+        
+        volumes:
+          postgres_data:
+        ```
+      </Step>
+
+      <Step title="Build and Run">
+        ```bash
+        # Build image
+        docker build -t deni-ai .
+        
+        # Run with docker-compose
+        docker-compose up -d
+        
+        # Run migrations
+        docker-compose exec app bun run db:migrate
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Other Platforms">
+    ### Other Deployment Options
+
+    Deni AI can be deployed to any platform supporting Next.js:
+
+    #### AWS (Elastic Beanstalk / ECS)
+
+    - Use Docker deployment method
+    - Configure RDS PostgreSQL database
+    - Set up Application Load Balancer
+    - Use AWS Secrets Manager for environment variables
+
+    #### Google Cloud Platform (Cloud Run)
+
+    - Deploy using Docker container
+    - Use Cloud SQL for PostgreSQL
+    - Configure Secret Manager
+    - Enable Cloud Run continuous deployment
+
+    #### DigitalOcean App Platform
+
+    - Connect GitHub repository
+    - Add managed PostgreSQL database
+    - Configure environment variables
+    - Deploy with automatic HTTPS
+
+    #### Fly.io
+
+    ```bash
+    # Install flyctl
+    curl -L https://fly.io/install.sh | sh
+    
+    # Launch app
+    fly launch
+    
+    # Add PostgreSQL
+    fly postgres create
+    fly postgres attach
+    
+    # Set secrets
+    fly secrets set BETTER_AUTH_SECRET=...
+    
+    # Deploy
+    fly deploy
+    ```
+  </Tab>
+</Tabs>
+
+## Database Setup
+
+### Initial Migration
+
+After deploying, run database migrations:
+
+```bash
+# Generate migration files (if schema changed)
+bun run db:generate
+
+# Apply migrations to production database
+bun run --env-file=.env.production db:migrate
+
+# Or push schema directly (development only)
+bun run db:push
+```
+
+### Generate better-auth Schema
+
+Generate authentication tables:
+
+```bash
+bun run auth:generate
+```
+
+This creates `src/db/schema/auth-schema.ts` with required tables.
+
+### Database Providers
+
+<CardGroup cols={2}>
+  <Card title="Neon" icon="database" href="https://neon.tech">
+    Serverless PostgreSQL with generous free tier
+  </Card>
+  <Card title="Supabase" icon="database" href="https://supabase.com">
+    PostgreSQL with built-in auth and storage
+  </Card>
+  <Card title="Railway" icon="database" href="https://railway.app">
+    Managed PostgreSQL with simple deployment
+  </Card>
+  <Card title="AWS RDS" icon="database" href="https://aws.amazon.com/rds">
+    Enterprise-grade PostgreSQL hosting
+  </Card>
+</CardGroup>
+
+## Production Considerations
+
+### Security
+
+<Warning>
+  **Never** commit `.env` files to version control. Use platform-specific secret management.
+</Warning>
+
+- **Use HTTPS** for all production deployments
+- **Rotate secrets** regularly (especially `BETTER_AUTH_SECRET`)
+- **Restrict CORS** if using API keys
+- **Enable rate limiting** (built-in at 30 req/min)
+- **Monitor API key usage** for anomalies
+
+### Performance
+
+- **Enable caching** for static assets
+- **Use CDN** for global distribution (Vercel includes this)
+- **Optimize database** with indexes (already configured)
+- **Monitor slow queries** and add indexes as needed
+- **Use connection pooling** for PostgreSQL (e.g., PgBouncer)
+
+### Monitoring
+
+- **Error tracking**: Sentry, LogRocket, or Datadog
+- **Performance monitoring**: Vercel Analytics or New Relic
+- **Database monitoring**: Check connection pool, slow queries
+- **Stripe webhooks**: Monitor webhook delivery in Stripe dashboard
+
+### Scaling
+
+- **Horizontal scaling**: Most platforms auto-scale (Vercel, Railway)
+- **Database scaling**: Use read replicas for heavy traffic
+- **Caching**: Add Redis for session storage if needed
+- **CDN**: Use for static assets and images
+
+### Backup
+
+- **Database backups**: Enable automated backups (daily recommended)
+- **Point-in-time recovery**: Available on most managed PostgreSQL services
+- **Export data**: Regularly export critical data for disaster recovery
+
+## Troubleshooting
+
+### Build Failures
+
+**Error**: Environment variable validation fails
+
+```
+ZodError: Invalid environment variables
+```
+
+**Solution**: Check that all required variables are set in your deployment platform.
+
+---
+
+**Error**: Database connection fails
+
+```
+Error: Connection terminated unexpectedly
+```
+
+**Solution**: Verify `DATABASE_URL` is correct and database is accessible from deployment platform.
+
+---
+
+### Runtime Errors
+
+**Error**: OAuth callback fails
+
+```
+Error: Redirect URI mismatch
+```
+
+**Solution**: Update OAuth provider settings with correct redirect URI:
+```
+https://your-domain.com/api/auth/callback/google
+```
+
+---
+
+**Error**: Stripe webhook signature verification fails
+
+```
+Error: Invalid signature
+```
+
+**Solution**: Ensure `STRIPE_WEBHOOK_SECRET` matches the webhook endpoint secret in Stripe dashboard.
+
+---
+
+### Migration Issues
+
+**Error**: Migration fails with "relation already exists"
+
+**Solution**: Use `db:push` for development, or drop and recreate tables (⚠️ data loss).
+
+---
+
+**Error**: better-auth schema mismatch
+
+**Solution**: Run `bun run auth:generate` to regenerate auth schema.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Keys" icon="key" href="/advanced/api-keys">
+    Set up API keys for programmatic access
+  </Card>
+  <Card title="Billing Setup" icon="credit-card" href="/advanced/billing-subscriptions">
+    Configure Stripe billing and webhooks
+  </Card>
+  <Card title="Usage Limits" icon="gauge" href="/advanced/usage-limits">
+    Understand usage quotas and rate limiting
+  </Card>
+  <Card title="Installation Guide" icon="code" href="/installation">
+    Local development setup and workflow
+  </Card>
+</CardGroup>

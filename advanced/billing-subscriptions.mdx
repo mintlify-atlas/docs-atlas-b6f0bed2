@@ -1,0 +1,351 @@
+---
+title: Billing & Subscriptions
+description: Manage Stripe billing, subscription plans, and payment settings
+---
+
+Deni AI uses Stripe for subscription management and billing. This guide covers plan selection, payment management, and webhook configuration for self-hosted deployments.
+
+## Subscription Plans
+
+Deni AI offers multiple subscription tiers with different usage limits and features.
+
+### Available Plans
+
+| Plan | Billing Cycle | Basic Messages | Premium Messages | Max Mode |
+|------|--------------|----------------|------------------|----------|
+| **Free** | - | 500/month | 50/month | No |
+| **Plus Monthly** | Monthly | 1,500/month | 400/month | No |
+| **Plus Yearly** | Yearly | 1,500/month | 400/month | No |
+| **Pro Monthly** | Monthly | 3,000/month | 800/month | Yes |
+| **Pro Yearly** | Yearly | 3,000/month | 800/month | Yes |
+| **Pro Team Monthly** | Monthly | 3,000/month per member | 800/month per member | Yes |
+| **Pro Team Yearly** | Yearly | 3,000/month per member | 800/month per member | Yes |
+
+<Note>
+  **Max Mode** is an unlimited usage feature available only to Pro plan users. It enables per-message billing when you exceed your monthly quota.
+</Note>
+
+### Plan Identifiers
+
+Plans are identified by lookup keys in Stripe:
+
+```typescript
+// Individual Plans
+"plus_monthly"     // Plus Monthly
+"plus_yearly"      // Plus Yearly
+"pro_monthly"      // Pro Monthly
+"pro_yearly"       // Pro Yearly
+
+// Team Plans
+"pro_team_monthly" // Pro Team Monthly
+"pro_team_yearly"  // Pro Team Yearly
+```
+
+## Managing Your Subscription
+
+### Subscribing to a Plan
+
+<Steps>
+  <Step title="Navigate to Billing">
+    Go to Settings > Billing in your Deni AI dashboard.
+  </Step>
+  
+  <Step title="Select a Plan">
+    Choose from Plus or Pro plans with monthly or yearly billing.
+  </Step>
+  
+  <Step title="Complete Checkout">
+    You'll be redirected to Stripe Checkout to enter payment details and complete the subscription.
+  </Step>
+  
+  <Step title="Return to Dashboard">
+    After successful payment, you'll be redirected back to Deni AI with your new plan active.
+  </Step>
+</Steps>
+
+### Upgrading or Downgrading
+
+To change your plan:
+
+1. Go to Settings > Billing
+2. Click "Manage Subscription" to open the Stripe Customer Portal
+3. Select a new plan
+4. Stripe will prorate the charges automatically
+
+### Canceling Your Subscription
+
+<Warning>
+  Canceling your subscription will downgrade your account to the Free plan at the end of your current billing period.
+</Warning>
+
+To cancel:
+
+1. Open the Stripe Customer Portal from Settings > Billing
+2. Click "Cancel Subscription"
+3. Confirm cancellation
+
+Your subscription will remain active until the current period ends, then you'll be downgraded to the Free plan.
+
+## Max Mode (Pro Plans Only)
+
+### What is Max Mode?
+
+Max Mode is an **unlimited usage** feature for Pro plan subscribers. When enabled:
+
+- You can continue making requests after exceeding your monthly quota
+- Each additional message is billed at a per-message rate
+- Usage is metered and reported to Stripe monthly
+
+### Max Mode Pricing
+
+```typescript
+// Per-message pricing (in cents)
+const MAX_MODE_PRICING = {
+  basic: 1,      // $0.01 per basic message
+  premium: 5,    // $0.05 per premium message
+};
+```
+
+- **Basic messages**: $0.01 per message (standard models)
+- **Premium messages**: $0.05 per message (advanced/reasoning models)
+
+### Enabling Max Mode
+
+<Steps>
+  <Step title="Check Eligibility">
+    Max Mode is only available for active Pro plan subscribers (not Plus or Free).
+  </Step>
+  
+  <Step title="Enable from Settings">
+    Go to Settings > Billing and toggle Max Mode ON.
+  </Step>
+  
+  <Step title="Monitor Usage">
+    Your Max Mode usage is tracked separately and displayed in your billing dashboard.
+  </Step>
+  
+  <Step title="Review Monthly Bill">
+    At the end of each billing period, your Max Mode usage is reported to Stripe and added to your invoice.
+  </Step>
+</Steps>
+
+### Max Mode Usage Tracking
+
+Max Mode usage is tracked in the `billing` table:
+
+```typescript
+{
+  maxModeEnabled: boolean;           // Is Max Mode active?
+  maxModeUsageBasic: number;         // Basic messages this period
+  maxModeUsagePremium: number;       // Premium messages this period
+  maxModePeriodStart: timestamp;     // Period start date
+}
+```
+
+Usage counters reset automatically at the start of each billing period.
+
+## Billing Database Schema
+
+The `billing` table stores subscription and payment data:
+
+```typescript
+{
+  id: string;                           // UUID primary key
+  userId: string;                       // User ID (foreign key)
+  organizationId: string | null;        // Team org ID (null for personal)
+  stripeCustomerId: string;             // Stripe customer ID
+  stripeSubscriptionId: string | null;  // Stripe subscription ID
+  planId: string | null;                // Plan identifier (e.g., "pro_monthly")
+  priceId: string | null;               // Stripe price ID
+  status: string;                       // Subscription status
+  cancelAt: number | null;              // Scheduled cancellation timestamp
+  mode: string;                         // "subscription" or "payment"
+  currentPeriodEnd: timestamp | null;   // Current period end date
+  
+  // Max Mode fields
+  maxModeEnabled: boolean;              // Max Mode toggle
+  maxModeUsageBasic: number;            // Basic message count
+  maxModeUsagePremium: number;          // Premium message count
+  maxModePeriodStart: timestamp | null; // Period start
+  stripeMeteredSubscriptionItemId: string | null; // Stripe metered item
+  
+  createdAt: timestamp;
+  updatedAt: timestamp;
+}
+```
+
+### Subscription Statuses
+
+Active billing statuses that grant plan access:
+
+```typescript
+const ACTIVE_BILLING_STATUSES = [
+  "active",      // Active subscription
+  "trialing",    // In trial period
+  "past_due",    // Payment failed, retry in progress
+  "incomplete",  // Initial payment processing
+  "unpaid",      // Payment failed, pending action
+  "paid",        // One-time payment completed
+];
+```
+
+Canceled subscriptions remain active until `currentPeriodEnd`.
+
+## Stripe Webhook Integration
+
+<Warning>
+  Webhook setup is **required** for self-hosted deployments to sync subscription status and handle billing events.
+</Warning>
+
+### Setting Up Webhooks
+
+<Steps>
+  <Step title="Create Webhook Endpoint">
+    In the Stripe Dashboard, go to Developers > Webhooks and click "Add endpoint".
+    
+    ```
+    Endpoint URL: https://your-domain.com/api/stripe/webhook
+    ```
+  </Step>
+  
+  <Step title="Select Events to Listen">
+    Add these event types:
+    
+    - `checkout.session.completed`
+    - `customer.subscription.created`
+    - `customer.subscription.updated`
+    - `customer.subscription.deleted`
+  </Step>
+  
+  <Step title="Copy Webhook Secret">
+    After creating the endpoint, Stripe will provide a webhook signing secret (starts with `whsec_`).
+  </Step>
+  
+  <Step title="Add to Environment Variables">
+    ```env
+    STRIPE_SECRET_KEY=sk_live_your_stripe_secret_key
+    STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+    ```
+  </Step>
+</Steps>
+
+### Testing Webhooks Locally
+
+For local development, use the Stripe CLI:
+
+```bash
+# Install Stripe CLI
+curl -s https://stripe.com/install-stripe-cli | bash
+
+# Login to Stripe
+stripe login
+
+# Forward webhooks to localhost
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+The CLI will output a webhook secret for testing. Add it to your `.env.local`:
+
+```env
+STRIPE_WEBHOOK_SECRET=whsec_...your_test_secret
+```
+
+### Webhook Event Handlers
+
+The webhook endpoint (`src/app/api/stripe/webhook/route.ts`) handles:
+
+#### `checkout.session.completed`
+
+Triggered when a user completes checkout:
+
+- Creates or updates billing record
+- Activates subscription
+- Sets plan ID and status
+
+#### `customer.subscription.created`
+
+Triggered when a subscription is created:
+
+- Saves subscription details
+- Links customer to user
+- Updates plan tier
+
+#### `customer.subscription.updated`
+
+Triggered when subscription changes (upgrade, downgrade, renewal):
+
+- Updates subscription status
+- Handles plan changes
+- Resets Max Mode usage on renewal
+
+#### `customer.subscription.deleted`
+
+Triggered when subscription is canceled:
+
+- Clears plan data
+- Sets status to "inactive"
+- User reverts to Free plan
+
+### Max Mode Usage Reporting
+
+Max Mode usage is reported to Stripe using **Meter Events**:
+
+```typescript
+await stripe.billing.meterEvents.create({
+  event_name: `max_mode_${category}`,  // "max_mode_basic" or "max_mode_premium"
+  payload: {
+    stripe_customer_id: stripeCustomerId,
+    value: "1",
+  },
+});
+```
+
+Stripe aggregates these events monthly and adds them to the invoice.
+
+## Disabling Billing
+
+For development or self-hosted instances without Stripe:
+
+```env
+NEXT_PUBLIC_BILLING_DISABLED=true
+```
+
+When billing is disabled:
+
+- All users have unlimited access
+- No payment required
+- Subscription UI is hidden
+
+<Warning>
+  Only disable billing for development environments or private deployments. Never disable billing in production with public access.
+</Warning>
+
+## Team Billing
+
+Team plans (`pro_team_monthly`, `pro_team_yearly`) allow organizations to share a subscription:
+
+- One billing record per organization
+- All members share the organization's plan tier
+- Usage quotas apply per member
+- Team billing is linked via `organizationId` in the billing table
+
+### Database Structure
+
+```typescript
+// Personal billing (organizationId is NULL)
+BILLING_USER_PERSONAL_IDX (userId) WHERE organizationId IS NULL
+
+// Team billing (organizationId is NOT NULL)
+BILLING_USER_ORG_IDX (userId, organizationId) WHERE organizationId IS NOT NULL
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Usage Limits" icon="gauge" href="/advanced/usage-limits">
+    Understand usage quotas and rate limiting
+  </Card>
+  <Card title="API Keys" icon="key" href="/advanced/api-keys">
+    Create API keys for programmatic access
+  </Card>
+</CardGroup>

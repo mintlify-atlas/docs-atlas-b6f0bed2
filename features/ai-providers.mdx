@@ -1,0 +1,338 @@
+---
+title: AI Providers & Models
+description: Access multiple AI providers and models through Deni AI's unified interface
+---
+
+Deni AI provides access to cutting-edge AI models from leading providers, all through a single, unified interface. Switch between models seamlessly to find the perfect AI for your task.
+
+## Available Providers
+
+Deni AI integrates with the following AI providers:
+
+<CardGroup cols={2}>
+  <Card title="OpenAI" icon="message-bot">
+    Access GPT-5 series models including GPT-5.2, GPT-5.3 Codex, and specialized variants.
+  </Card>
+  <Card title="Anthropic" icon="message-code">
+    Use Claude 4.5 and 4.6 models, including Sonnet and Opus variants with advanced reasoning.
+  </Card>
+  <Card title="Google" icon="google">
+    Leverage Gemini 3 Pro and Flash models for multimodal tasks.
+  </Card>
+  <Card title="xAI" icon="x-twitter">
+    Access Grok models optimized for fast reasoning and coding tasks.
+  </Card>
+  <Card title="OpenRouter" icon="route">
+    Connect to specialized models like Pony Alpha through OpenRouter.
+  </Card>
+  <Card title="Custom Providers" icon="plug">
+    Add your own OpenAI-compatible endpoints for maximum flexibility.
+  </Card>
+</CardGroup>
+
+## Model Catalog
+
+Here's the complete list of models available in Deni AI:
+
+### OpenAI Models
+
+<Tabs>
+  <Tab title="GPT-5 Series">
+    <Accordion title="GPT-5.2">
+      **Features**: Reasoning, Smart, Fast
+      
+      The latest GPT-5 model with enhanced reasoning capabilities and fast response times. Ideal for general-purpose tasks requiring intelligent analysis.
+    </Accordion>
+    
+    <Accordion title="GPT-5.3 Codex">
+      **Features**: Coding, Smart, Fast
+      
+      Specialized for programming tasks with advanced code understanding and generation capabilities.
+    </Accordion>
+    
+    <Accordion title="GPT-5.1 Codex">
+      **Features**: Coding, Fast
+      
+      Fast coding model for quick code generation and debugging tasks.
+    </Accordion>
+    
+    <Accordion title="GPT-5.1 Codex Mini">
+      **Features**: Coding, Fast
+      
+      Lightweight coding model optimized for speed and efficiency.
+    </Accordion>
+  </Tab>
+  
+  <Tab title="GPT-OSS (via Groq)">
+    <Accordion title="GPT-OSS 120B">
+      **Features**: Reasoning, Fast  
+      **Provider**: Groq
+      
+      Large open-source model with strong reasoning capabilities, delivered through Groq's ultra-fast inference.
+    </Accordion>
+    
+    <Accordion title="GPT-OSS 20B">
+      **Features**: Reasoning, Fastest, Fast  
+      **Provider**: Groq
+      
+      Smaller, extremely fast model perfect for quick responses and high-throughput scenarios.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+### Anthropic Models (Premium)
+
+<Warning>
+Anthropic models require a premium subscription or active billing.
+</Warning>
+
+<Tabs>
+  <Tab title="Claude Sonnet">
+    <Accordion title="Claude Sonnet 4.5">
+      **Features**: Reasoning, Smart, Fast  
+      **Tier**: Premium
+      
+      Balanced model offering excellent performance across reasoning, coding, and creative tasks.
+    </Accordion>
+  </Tab>
+  
+  <Tab title="Claude Opus">
+    <Accordion title="Claude Opus 4.6">
+      **Features**: Reasoning, Smart  
+      **Tier**: Premium
+      
+      Latest Claude model with state-of-the-art reasoning and complex task handling.
+    </Accordion>
+    
+    <Accordion title="Claude Opus 4.5">
+      **Features**: Reasoning, Smart  
+      **Tier**: Premium
+      
+      Powerful model for complex reasoning tasks and long-form content generation.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+### Google Models
+
+<Tabs>
+  <Tab title="Gemini 3">
+    <Accordion title="Gemini 3 Pro">
+      **Features**: Smartest, Smart, Reasoning
+      
+      Google's most capable model with multimodal understanding and advanced reasoning.
+    </Accordion>
+    
+    <Accordion title="Gemini 3 Flash">
+      **Features**: Reasoning, Fast
+      
+      Fast variant of Gemini 3 optimized for quick responses while maintaining quality.
+    </Accordion>
+  </Tab>
+  
+  <Tab title="Gemini 2.5">
+    <Accordion title="Gemini 2.5 Flash Lite">
+      **Features**: Reasoning, Fast
+      
+      Lightweight, efficient model for everyday tasks.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+### xAI Models
+
+<Tabs>
+  <Tab title="Grok Coding">
+    <Accordion title="Grok Code Fast 1">
+      **Features**: Reasoning
+      
+      Specialized coding model from xAI with strong reasoning capabilities.
+    </Accordion>
+  </Tab>
+  
+  <Tab title="Grok 4.1">
+    <Accordion title="Grok 4.1 Fast (Reasoning)">
+      **Features**: Reasoning, Fast
+      
+      Fast Grok model with enhanced reasoning for quick, intelligent responses.
+    </Accordion>
+    
+    <Accordion title="Grok 4.1 Fast (Non-Reasoning)">
+      **Features**: Fast
+      
+      Ultra-fast Grok variant optimized for speed over complex reasoning.
+    </Accordion>
+  </Tab>
+</Tabs>
+
+### OpenRouter Models
+
+<Accordion title="Pony Alpha">
+  **Features**: Reasoning  
+  **Provider**: OpenRouter
+  
+  Specialized model available through OpenRouter with unique reasoning capabilities.
+</Accordion>
+
+## Switching Between Models
+
+### In-Chat Model Selection
+
+Change models at any time during a conversation:
+
+<Steps>
+  <Step title="Open Model Selector">
+    Click the model selector button in the chat composer (bottom of the chat interface).
+  </Step>
+  <Step title="Browse Models">
+    View all available models organized by provider. Models display their features as badges (Reasoning, Smart, Fast, etc.).
+  </Step>
+  <Step title="Select Model">
+    Click on any model to switch. Your next message will use the selected model.
+  </Step>
+</Steps>
+
+<Info>
+You can switch models mid-conversation. Each message is processed by the model selected at the time of sending.
+</Info>
+
+### Model Selection UI
+
+The model selector provides rich information:
+
+- **Model name**: Clear identification of each model
+- **Provider badge**: Shows the AI company (OpenAI, Anthropic, Google, xAI)
+- **Feature badges**: Visual indicators of model capabilities
+  - Reasoning: Advanced logical thinking
+  - Smart: High intelligence
+  - Fast: Quick response times
+  - Coding: Programming expertise
+  - Smartest/Fastest: Top-tier in category
+- **Premium indicator**: Shows which models require premium access
+- **Custom badge**: Identifies user-created custom models
+
+## Model Features Explained
+
+<Tabs>
+  <Tab title="Reasoning">
+    Models with reasoning capabilities can:
+    - Break down complex problems
+    - Show their thought process
+    - Handle multi-step logical tasks
+    - Provide detailed explanations
+    
+    <Tip>
+    Enable "Chain of Thought" display to see the reasoning process.
+    </Tip>
+  </Tab>
+  
+  <Tab title="Smart/Smartest">
+    Indicates general intelligence level:
+    - **Smart**: High capability across diverse tasks
+    - **Smartest**: Highest tier of model intelligence
+    
+    Best for:
+    - Complex analysis
+    - Creative writing
+    - Nuanced understanding
+  </Tab>
+  
+  <Tab title="Fast/Fastest">
+    Speed characteristics:
+    - **Fast**: Quick response generation
+    - **Fastest**: Ultra-fast, near-instant responses
+    
+    Ideal for:
+    - Real-time conversations
+    - High-throughput scenarios
+    - Quick iterations
+  </Tab>
+  
+  <Tab title="Coding">
+    Specialized programming capabilities:
+    - Code generation
+    - Debugging assistance
+    - Algorithm design
+    - Multi-language support
+    
+    <Note>
+    Coding models include syntax highlighting and code-specific features.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Provider-Specific Features
+
+### OpenAI
+- Industry-leading GPT models
+- Excellent general-purpose performance
+- Strong coding capabilities with Codex variants
+- Fast inference through optimized infrastructure
+
+### Anthropic (Premium)
+- Advanced reasoning with Claude models
+- Long context windows
+- Strong safety and alignment
+- Excellent for complex, nuanced tasks
+
+### Google
+- Multimodal capabilities (text, images, video)
+- Large context windows
+- Strong performance on diverse tasks
+- Fast Flash variants for speed
+
+### xAI
+- Grok models with unique training
+- Strong reasoning capabilities
+- Specialized coding models
+- Fast inference options
+
+### OpenRouter
+- Access to specialized models
+- Unified API for multiple providers
+- Flexible model routing
+
+## Choosing the Right Model
+
+<CardGroup cols={2}>
+  <Card title="For General Questions" icon="comment">
+    **Recommended**: GPT-5.2, Gemini 3 Pro, Claude Sonnet 4.5
+    
+    Use smart, well-rounded models for everyday tasks.
+  </Card>
+  
+  <Card title="For Coding" icon="code">
+    **Recommended**: GPT-5.3 Codex, Grok Code Fast 1
+    
+    Choose models specifically optimized for programming.
+  </Card>
+  
+  <Card title="For Speed" icon="bolt">
+    **Recommended**: GPT-OSS 20B, Gemini 3 Flash, Grok 4.1 Fast
+    
+    Select fastest models when response time is critical.
+  </Card>
+  
+  <Card title="For Complex Reasoning" icon="brain">
+    **Recommended**: Claude Opus 4.6, Gemini 3 Pro, GPT-5.2
+    
+    Use top-tier reasoning models for complex analysis.
+  </Card>
+</CardGroup>
+
+## Model Availability
+
+<Info>
+Model availability depends on your subscription tier and usage limits. Some models require premium access or additional configuration.
+</Info>
+
+### Free Tier
+Access to select OpenAI, Google, xAI, and OpenRouter models with usage limits.
+
+### Premium Tier
+Unlimited access to all models including Claude (Anthropic) with higher usage limits.
+
+### BYOK (Bring Your Own Key)
+Use your own API keys to access models directly, bypassing usage limits.
+
+See [Custom Models](/features/custom-models) for information on adding your own models and API keys.

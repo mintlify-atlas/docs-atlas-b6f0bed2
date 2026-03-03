@@ -1,80 +1,490 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with Deni AI in minutes - from signup to your first AI conversation
 ---
 
-## Get started in three steps
+Get up and running with Deni AI in under 2 minutes. This guide walks you through creating an account and starting your first conversation with advanced AI models.
 
-Get your documentation site running locally and make your first customization.
+<Steps>
+  <Step title="Create your account">
+    Visit [Deni AI](https://deniai.app) and click **Get Started** to create your account.
 
-### Step 1: Set up your local environment
+    <Tabs>
+      <Tab title="OAuth (Recommended)">
+        Sign up instantly with your existing account:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+        - **Google**: Use your Google account for quick access
+        - **GitHub**: Perfect for developers - sign in with GitHub
 
-### Step 2: Deploy your changes
+        Click your preferred provider, authorize the connection, and you're in. No password to remember.
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+        <Tip>
+          OAuth providers offer the fastest signup experience and include automatic email verification.
+        </Tip>
+      </Tab>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+      <Tab title="Email & Password">
+        Create an account with your email address:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+        1. Enter your email and create a password
+        2. Check your inbox for a verification email
+        3. Click the verification link to activate your account
+        4. Sign in with your credentials
 
-### Step 3: Go live
+        <Info>
+          Email verification is required for security. The link expires in 1 hour.
+        </Info>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+        **Password requirements:**
+        - Passwords are checked against the Have I Been Pwned database
+        - Choose a strong, unique password
+        - You can reset it anytime via email
+      </Tab>
+
+      <Tab title="Magic Link">
+        Sign in without a password using magic links:
+
+        1. Enter your email address
+        2. Check your inbox for a sign-in link
+        3. Click the link to access your account instantly
+
+        <Note>
+          Magic links expire after one use and are perfect for quick, secure access without managing passwords.
+        </Note>
+      </Tab>
+
+      <Tab title="Passkey">
+        Use biometric authentication with passkeys (most secure):
+
+        - Face ID, Touch ID, or Windows Hello
+        - Device-based authentication
+        - No passwords to remember or manage
+
+        <Warning>
+          Passkey setup requires a supported device with biometric capabilities. You can add passkeys after signing up with another method via **Settings**.
+        </Warning>
+      </Tab>
+
+      <Tab title="Guest Mode">
+        Try Deni AI without creating an account:
+
+        1. Click **Continue as Guest** on the sign-in page
+        2. Start chatting immediately with anonymous access
+
+        <Warning>
+          Guest mode limitations:
+          - Conversations are temporary and tied to your browser session
+          - No access to team features or advanced settings
+          - Limited usage compared to registered accounts
+
+          We recommend creating a free account to save your conversations and unlock all features.
+        </Warning>
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Choose your AI model">
+    After signing in, you'll see the chat interface with a model selector. Deni AI offers access to cutting-edge models from multiple providers:
+
+    <AccordionGroup>
+      <Accordion title="OpenAI Models" icon="openai">
+        **GPT-5.2** — Latest flagship model with advanced reasoning, smart responses, and fast performance
+
+        **GPT-5.3 Codex** — Specialized for coding tasks with deep programming knowledge
+
+        **GPT-5.1 Codex & Codex Mini** — Faster coding assistants for quick code help
+
+        **GPT-oss 120b & 20b** — Open-source models via Groq for ultra-fast responses
+      </Accordion>
+
+      <Accordion title="Anthropic Models" icon="anthropic">
+        **Claude Opus 4.6** (Pro) — The most capable Claude model for complex reasoning
+
+        **Claude Opus 4.5** (Pro) — Previous flagship with excellent performance
+
+        **Claude Sonnet 4.5** (Pro) — Balanced model offering great speed and intelligence
+
+        <Note>
+          Anthropic models marked with "Pro" may require a premium subscription or have usage limits on free accounts.
+        </Note>
+      </Accordion>
+
+      <Accordion title="Google Models" icon="google">
+        **Gemini 3 Pro** — Google's smartest model with multimodal capabilities
+
+        **Gemini 3 Flash** — Fast responses with strong reasoning abilities
+
+        **Gemini 2.5 Flash Lite** — Lightweight model for quick queries
+      </Accordion>
+
+      <Accordion title="xAI Models" icon="x-twitter">
+        **Grok 4.1 Fast (Reasoning)** — Fast model with built-in reasoning capabilities
+
+        **Grok 4.1 Fast (Non-Reasoning)** — Faster responses without explicit reasoning steps
+
+        **Grok Code Fast 1** — Specialized for coding and technical tasks
+      </Accordion>
+
+      <Accordion title="OpenRouter" icon="route">
+        **Pony Alpha** — Reasoning-focused model from the OpenRouter ecosystem
+      </Accordion>
+    </AccordionGroup>
+
+    <Tip>
+      **Not sure which model to choose?**
+      - For general questions: **GPT-5.2** or **Gemini 3 Pro**
+      - For coding: **GPT-5.3 Codex** or **Grok Code Fast 1**
+      - For speed: **GPT-oss 20b** or **Gemini 3 Flash**
+      - For complex reasoning: **Claude Opus 4.6** or **GPT-5.2**
+    </Tip>
+
+    You can switch models at any time during your conversation using the model selector button (press **Ctrl/Cmd + K** for quick access).
+  </Step>
+
+  <Step title="Start your first conversation">
+    Now you're ready to chat! Here's how to make the most of your first conversation:
+
+    ### Send your first message
+
+    Type your question or prompt in the chat composer at the bottom of the screen and press **Enter** to send.
+
+    <CardGroup cols={2}>
+      <Card title="Try these prompts" icon="lightbulb">
+        - "Explain quantum computing in simple terms"
+        - "Write a Python function to parse JSON"
+        - "Help me plan a trip to Japan"
+        - "Review this code for bugs: [paste code]"
+      </Card>
+      <Card title="Use suggestions" icon="sparkles">
+        Click any of the suggestion cards on the home screen:
+        - Creative Writing
+        - Code Help
+        - Summarize
+        - Analyze
+
+        These are pre-written prompts to help you get started quickly.
+      </Card>
+    </CardGroup>
+
+    ### Advanced options
+
+    Before sending your message, you can configure these options:
+
+    <Tabs>
+      <Tab title="Web Search">
+        Toggle **Web Search** to let the AI access real-time information from the web:
+
+        - Current events and news
+        - Latest documentation and guides
+        - Real-time data and statistics
+        - Recent developments in any field
+
+        When enabled, the AI will search the web using Brave Search API and cite its sources.
+
+        <Info>
+          Web search results appear in a dedicated section below the AI's response with clickable source links.
+        </Info>
+      </Tab>
+
+      <Tab title="File Attachments">
+        Click the **attachment** button to upload files:
+
+        - **Images**: For vision-capable models to analyze photos, screenshots, diagrams
+        - **Documents**: Share code files, text documents, or other content
+        - **Multiple files**: Attach multiple files to a single message
+
+        <Warning>
+          File support varies by model. Vision-capable models like GPT-5, Gemini 3, and Claude Opus can analyze images.
+        </Warning>
+      </Tab>
+
+      <Tab title="Image Generation">
+        Enable **Image Mode** to generate images from your text prompts:
+
+        - Describe what you want to see
+        - The AI will generate a custom image
+        - Download generated images with metadata
+        - View resolution, aspect ratio, and model info
+
+        <Tip>
+          Be specific in your image prompts: "A serene mountain lake at sunset with pine trees in the foreground" works better than "a lake".
+        </Tip>
+      </Tab>
+
+      <Tab title="Video Generation">
+        Enable **Video Mode** for models that support video generation:
+
+        - Create videos from text descriptions
+        - Playback with full controls
+        - Download generated videos
+        - View technical metadata (resolution, duration, seed)
+
+        <Note>
+          Video generation is only available with select models and may have longer processing times.
+        </Note>
+      </Tab>
+
+      <Tab title="Reasoning Effort">
+        For reasoning models, adjust the **Reasoning Effort** level:
+
+        - **Low**: Faster responses with basic reasoning
+        - **Medium**: Balanced reasoning and speed
+        - **High**: Deep reasoning for complex problems
+
+        The AI's thought process is displayed in a collapsible section showing internal reasoning steps.
+
+        <Info>
+          Higher reasoning effort may result in slower responses but better accuracy for complex tasks.
+        </Info>
+      </Tab>
+    </Tabs>
+
+    ### Watch the AI respond
+
+    As the AI generates its response, you'll see:
+
+    - **Real-time streaming**: Text appears as it's being generated
+    - **Thinking indicator**: Shimmer effect while processing
+    - **Chain of thought**: Reasoning steps (for capable models)
+    - **Source citations**: Links to web sources (when web search is enabled)
+
+    You can **stop generation** at any time by clicking the stop button.
+  </Step>
+
+  <Step title="Manage your conversations">
+    Your conversations are automatically saved as you chat. Here's how to manage them:
+
+    ### Conversation sidebar
+
+    - **View history**: Access all past conversations sorted by recent activity
+    - **Search**: Find specific conversations quickly
+    - **Organize**: Conversations are auto-titled based on content
+    - **Rename**: Click any conversation title to rename it
+
+    ### Message actions
+
+    Each AI response includes helpful actions:
+
+    <CardGroup cols={2}>
+      <Card title="Regenerate" icon="arrows-rotate">
+        Don't like the response? Click regenerate to get a new one with the same settings.
+      </Card>
+      <Card title="Copy" icon="copy">
+        Copy any message to your clipboard with one click.
+      </Card>
+      <Card title="Download" icon="download">
+        Save generated images or videos directly from the chat.
+      </Card>
+      <Card title="View sources" icon="link">
+        See all web sources cited in the response.
+      </Card>
+    </CardGroup>
+
+    ### Delete conversations
+
+    Remove conversations you no longer need:
+    - Hover over a conversation in the sidebar
+    - Click the delete icon
+    - Confirm deletion
+
+    <Warning>
+      Deleted conversations cannot be recovered. Make sure to save any important information before deleting.
+    </Warning>
+  </Step>
+</Steps>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Now that you're chatting with AI, explore these features to get more out of Deni AI:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card
+    title="Bring Your Own Keys"
+    icon="key"
+    href="/features/ai-providers"
+  >
+    Use your own API keys from OpenAI, Anthropic, Google, or xAI for unlimited usage without platform limits
+  </Card>
+  <Card
+    title="Custom Models"
+    icon="sliders"
+    href="/features/custom-models"
+  >
+    Add custom AI models from OpenAI-compatible endpoints and configure them in the chat interface
+  </Card>
+  <Card
+    title="Team Collaboration"
+    icon="users"
+    href="/features/team-collaboration"
+  >
+    Create organizations, invite team members, and collaborate on AI-powered projects
+  </Card>
+  <Card
+    title="Security Settings"
+    icon="shield"
+    href="/configuration/authentication"
+  >
+    Enable two-factor authentication, add passkeys, and configure security preferences
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Tips for great conversations
+
+<AccordionGroup>
+  <Accordion title="Be specific with your prompts" icon="bullseye">
+    The more specific you are, the better the AI can help:
+
+    ❌ "Write code"
+    ✅ "Write a Python function that takes a list of numbers and returns the median value"
+
+    ❌ "Help with marketing"
+    ✅ "Create 5 social media post ideas for a sustainable fashion brand targeting Gen Z"
+  </Accordion>
+
+  <Accordion title="Provide context" icon="book">
+    Give the AI relevant background information:
+
+    - Your skill level (beginner, intermediate, expert)
+    - What you've already tried
+    - Specific constraints or requirements
+    - The end goal you're trying to achieve
+
+    **Example**: "I'm a beginner learning React. I tried using useState but got an error about hooks being called conditionally. Here's my code: [code]. How do I fix this?"
+  </Accordion>
+
+  <Accordion title="Break down complex tasks" icon="list-check">
+    For complex projects, break them into smaller steps:
+
+    1. Start with a high-level plan
+    2. Work through each step one at a time
+    3. Ask follow-up questions to refine
+    4. Iterate based on the AI's suggestions
+
+    The AI works best when tackling focused, well-defined problems.
+  </Accordion>
+
+  <Accordion title="Use the right model for the job" icon="wrench">
+    Different models excel at different tasks:
+
+    - **Coding**: GPT-5.3 Codex, Grok Code Fast 1
+    - **Reasoning**: Claude Opus 4.6, GPT-5.2
+    - **Speed**: GPT-oss 20b, Gemini 3 Flash
+    - **Latest info**: Any model with web search enabled
+
+    Don't be afraid to switch models mid-conversation if you need different capabilities.
+  </Accordion>
+
+  <Accordion title="Leverage web search wisely" icon="globe">
+    Enable web search when you need:
+    - Current events or recent news
+    - Latest documentation versions
+    - Real-time data (stock prices, weather, etc.)
+    - Information from specific websites
+
+    Disable it for:
+    - Creative writing
+    - Code generation (unless you need latest syntax)
+    - General knowledge questions
+    - Faster responses
+
+    <Tip>
+      Web search adds latency to responses. Only enable it when you specifically need current information.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Iterate and refine" icon="arrows-spin">
+    Don't expect perfection on the first try:
+
+    - Review the AI's response
+    - Ask for clarification or changes
+    - Request different approaches
+    - Provide feedback on what you liked or didn't like
+
+    **Example follow-ups**:
+    - "Can you make this more concise?"
+    - "Explain the technical details in simpler terms"
+    - "Show me an alternative approach"
+    - "Add error handling to this code"
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Messages aren't sending" icon="circle-exclamation">
+    **Possible causes:**
+    - Network connection issues
+    - Rate limits exceeded
+    - Invalid file attachments
+    - Model temporarily unavailable
+
+    **Solutions:**
+    1. Check your internet connection
+    2. Wait a few minutes and try again
+    3. Try a different model
+    4. Remove file attachments and try plain text
+    5. Refresh the page
+
+    <Info>
+      If you're using a free account, you may have usage limits. Check **Settings** → **Usage** to see your current limits.
+    </Info>
+  </Accordion>
+
+  <Accordion title="Can't see my conversations" icon="eye-slash">
+    **If you're in guest mode:**
+    - Guest conversations are stored in your browser only
+    - Clearing browser data will delete them
+    - Create a free account to save conversations permanently
+
+    **If you have an account:**
+    - Make sure you're signed in
+    - Check that you're viewing the correct organization (if using teams)
+    - Try refreshing the page
+  </Accordion>
+
+  <Accordion title="Images or videos not generating" icon="image">
+    **Common issues:**
+    - Image/video mode not enabled
+    - Model doesn't support image/video generation
+    - Prompt doesn't clearly describe visual content
+    - Service temporarily unavailable
+
+    **Solutions:**
+    1. Verify image/video mode is toggled on
+    2. Switch to a model that supports generation
+    3. Make your prompt more descriptive and specific
+    4. Try again in a few minutes
+  </Accordion>
+
+  <Accordion title="Web search not working" icon="magnifying-glass">
+    **Check these items:**
+    - Web search toggle is enabled
+    - Your query requires current information
+    - Brave Search API is configured (for self-hosted)
+
+    <Note>
+      Web search may not activate if the AI determines it can answer from its training data. Try asking explicitly: "Search the web for..."
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+## Get help
+
+Need more assistance?
+
+<CardGroup cols={2}>
+  <Card
+    title="View Features"
+    icon="book"
+    href="/features/chat-interface"
+  >
+    Explore detailed documentation on all chat features and capabilities
+  </Card>
+  <Card
+    title="GitHub Issues"
+    icon="github"
+    href="https://github.com/teamzisty/deni-ai/issues"
+  >
+    Report bugs, request features, or get community support
+  </Card>
+</CardGroup>

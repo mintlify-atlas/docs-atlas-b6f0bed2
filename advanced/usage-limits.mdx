@@ -1,0 +1,406 @@
+---
+title: Usage Limits & Rate Limiting
+description: Understanding usage quotas, rate limits, and usage tracking in Deni AI
+---
+
+Deni AI enforces usage limits and rate limiting to ensure fair access and system stability. This guide explains how quotas work, how they're tracked, and what happens when limits are reached.
+
+## Usage Categories
+
+Messages are classified into two categories based on the AI model used:
+
+### Basic Messages
+
+**Standard AI models** with fast response times:
+
+- OpenAI: GPT-4o, GPT-4o mini
+- Anthropic: Claude 3.5 Haiku, Claude 3.5 Sonnet
+- Google: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 2.0 Flash
+- xAI: Grok 2, Grok Beta
+- Groq: Llama models, Mixtral models
+
+### Premium Messages
+
+**Advanced AI models** with reasoning capabilities:
+
+- OpenAI: o1, o1 mini, o1 pro, o3 mini
+- Anthropic: Claude 4.5 Sonnet (with thinking)
+- Google: Gemini 2.0 Flash Thinking, Gemini 2.0 Pro
+- DeepSeek: DeepSeek R1
+- Any custom models marked as premium
+
+<Note>
+  The category is determined automatically based on the selected model. You don't need to specify it manually.
+</Note>
+
+## Usage Quotas by Plan
+
+Usage limits reset monthly at the start of your billing period.
+
+| Plan | Basic Messages/Month | Premium Messages/Month |
+|------|---------------------|------------------------|
+| **Free** | 500 | 50 |
+| **Plus** | 1,500 | 400 |
+| **Pro** | 3,000 | 800 |
+| **Guest** | 20 | 0 |
+
+<Warning>
+  Guest users (unauthenticated sessions) have limited access and cannot use premium models.
+</Warning>
+
+### Pro Plan: Max Mode
+
+Pro plan users can enable **Max Mode** for unlimited usage:
+
+- Continue using Deni AI after quota is exhausted
+- Pay per message: $0.01 (basic) or $0.05 (premium)
+- No hard limit - usage is metered and billed monthly
+
+[Learn more about Max Mode →](/advanced/billing-subscriptions#what-is-max-mode)
+
+## Rate Limiting
+
+Rate limits prevent abuse and ensure system stability.
+
+### Chat API Rate Limit
+
+**30 requests per minute** per user:
+
+```typescript
+const rateCheck = checkRateLimit({
+  key: `chat:${userId}`,
+  windowMs: 60_000,        // 60 seconds
+  maxRequests: 30,         // 30 requests
+});
+```
+
+- Applies to `/api/chat` endpoint
+- Shared across all sessions for the same user
+- Includes both web UI and API key requests
+
+### Rate Limit Response
+
+When rate limit is exceeded, the API returns:
+
+```json
+{
+  "error": "Too many requests. Please slow down."
+}
+```
+
+**HTTP Status**: `429 Too Many Requests`
+
+**Headers**:
+```
+Retry-After: 45  // Seconds until next request allowed
+```
+
+### Rate Limit Algorithm
+
+Deni AI uses a **sliding window** rate limiter:
+
+```typescript
+type RateLimitEntry = {
+  count: number;      // Request count in current window
+  resetTime: number;  // Timestamp when window expires
+};
+```
+
+**Implementation** (`src/lib/rate-limit.ts`):
+
+1. Check if entry exists for user
+2. If window expired, reset counter to 1
+3. If under limit, increment counter
+4. If over limit, return `429` with `retryAfter`
+
+<Note>
+  Rate limit data is stored in-memory and is cleared every 60 seconds. Expired entries are cleaned up automatically.
+</Note>
+
+## Usage Tracking
+
+### Database Schema
+
+Usage is tracked in the `usage_quota` table:
+
+```typescript
+{
+  id: string;                 // UUID primary key
+  userId: string;             // User ID (foreign key)
+  category: string;           // "basic" | "premium"
+  planTier: string;           // "free" | "plus" | "pro"
+  limitAmount: number | null; // Quota limit (null = unlimited)
+  used: number;               // Messages used this period
+  periodStart: timestamp;     // Period start date
+  periodEnd: timestamp | null;// Period end date
+  createdAt: timestamp;
+  updatedAt: timestamp;
+}
+```
+
+**Unique Index**: `(userId, category)` - one record per user per category
+
+### Usage Consumption Flow
+
+When a chat request is made:
+
+<Steps>
+  <Step title="Determine Category">
+    The system checks if the model is premium or basic based on the model identifier.
+  </Step>
+  
+  <Step title="Check Usage">
+    Query current usage for the user and category:
+    
+    ```typescript
+    const usageSummary = await getUsageSummary({ 
+      userId, 
+      isAnonymous 
+    });
+    ```
+  </Step>
+  
+  <Step title="Verify Limit">
+    Check if remaining quota > 0:
+    
+    ```typescript
+    const categoryUsage = usageSummary.usage.find(
+      usage => usage.category === usageCategory
+    );
+    const isLimitReached = categoryUsage?.remaining <= 0;
+    ```
+  </Step>
+  
+  <Step title="Handle Limit Exceeded">
+    If limit is reached:
+    
+    - **Max Mode enabled**: Consume usage, bill per-message
+    - **Max Mode disabled**: Return 402 error
+  </Step>
+  
+  <Step title="Consume Usage">
+    Atomically increment usage counter:
+    
+    ```typescript
+    await consumeUsage({
+      userId,
+      category: usageCategory,
+      isAnonymous,
+    });
+    ```
+  </Step>
+</Steps>
+
+### Atomic Usage Updates
+
+Usage is updated atomically to prevent race conditions:
+
+```typescript
+await db
+  .insert(usageQuota)
+  .values({
+    userId,
+    category,
+    planTier,
+    limitAmount: limit,
+    used: state.used + 1,
+    periodStart: state.periodStart,
+    periodEnd: state.targetPeriodEnd,
+  })
+  .onConflictDoUpdate({
+    target: [usageQuota.userId, usageQuota.category],
+    set: {
+      used: sql`${usageQuota.used} + 1`,  // Atomic increment
+      updatedAt: new Date(),
+    },
+  });
+```
+
+This prevents Time-of-Check-Time-of-Use (TOCTOU) race conditions.
+
+## Usage Period Reset
+
+Usage counters reset automatically based on your subscription:
+
+### Reset Logic
+
+```typescript
+function resolvePeriodEnd(now: Date): Date {
+  // Reset at start of next month
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear(), 
+      now.getUTCMonth() + 1, 
+      1, 0, 0, 0, 0
+    )
+  );
+}
+```
+
+### Subscription Renewal
+
+For paid subscriptions:
+
+- Reset occurs at `currentPeriodEnd` from Stripe
+- Counters reset to 0 when new period starts
+- `periodStart` is updated to renewal date
+
+### Free Plan
+
+For free users:
+
+- Reset occurs at start of next calendar month (UTC)
+- Independent of signup date
+
+### Max Mode Reset
+
+When a Pro subscription renews:
+
+```typescript
+if (isRenewal && maxModeEnabled) {
+  await resetMaxModeUsage(userId);
+}
+```
+
+Max Mode usage counters (`maxModeUsageBasic`, `maxModeUsagePremium`) are reset to 0.
+
+## Error Responses
+
+### Usage Limit Exceeded
+
+```json
+{
+  "error": "You've hit the usage limit for your plan.",
+  "reason": "usage_limit"
+}
+```
+
+**HTTP Status**: `402 Payment Required`
+
+**Thrown by**: `UsageLimitError` class
+
+### Premium Models for Guests
+
+```json
+{
+  "error": "Premium models are not available for guest sessions."
+}
+```
+
+**HTTP Status**: `403 Forbidden`
+
+Guests cannot access premium models even if they have quota remaining.
+
+### BYOK (Bring Your Own Key)
+
+If users provide their own API keys for AI providers:
+
+- Usage limits are **bypassed**
+- No quota consumption
+- No Max Mode charges
+- User's provider account is billed directly
+
+<Note>
+  BYOK is configured in Settings > Provider Keys. When a provider key is set with "Prefer BYOK" enabled, requests use your key instead of Deni AI's quota.
+</Note>
+
+## Checking Your Usage
+
+### Usage Summary API
+
+Get current usage status:
+
+```typescript
+const summary = await getUsageSummary({ 
+  userId, 
+  isAnonymous 
+});
+
+// Response:
+{
+  tier: "pro",                    // Subscription tier
+  planId: "pro_monthly",          // Plan identifier
+  status: "active",               // Subscription status
+  periodEnd: Date,                // Period end date
+  maxModeEnabled: true,           // Max Mode status
+  maxModeEligible: true,          // Max Mode eligibility
+  usage: [
+    {
+      category: "basic",
+      limit: 3000,                 // Monthly limit
+      used: 1250,                  // Used this period
+      remaining: 1750,             // Remaining quota
+      periodStart: Date,
+      periodEnd: Date,
+    },
+    {
+      category: "premium",
+      limit: 800,
+      used: 450,
+      remaining: 350,
+      periodStart: Date,
+      periodEnd: Date,
+    },
+  ],
+}
+```
+
+### Dashboard Display
+
+Your usage is displayed in:
+
+- **Settings > Usage**: Detailed breakdown by category
+- **Chat UI**: Warning when approaching limits
+- **Billing Page**: Max Mode usage and estimated costs
+
+## Implementation Notes
+
+### Guest Usage
+
+Guest users (unauthenticated) have special handling:
+
+```typescript
+const GUEST_USAGE_LIMITS: Record<UsageCategory, number> = {
+  basic: 20,      // 20 basic messages
+  premium: 0,     // No premium access
+};
+```
+
+- Guest quotas **never reset** (static limit)
+- No `periodEnd` is set
+- Cannot upgrade to paid plans without account
+
+### Team Usage
+
+For team plans:
+
+- Each member has their own usage quota
+- Quotas are based on the team's plan tier
+- Usage is tracked per-member, not per-organization
+
+### Unlimited Plans
+
+If a user has unlimited quota (`limitAmount = null`):
+
+```typescript
+if (limit === null) {
+  return {
+    limit: null,
+    remaining: null,
+    usedMaxMode: false,
+  };
+}
+```
+
+No usage consumption or tracking occurs.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Keys" icon="key" href="/advanced/api-keys">
+    Create API keys for programmatic access
+  </Card>
+  <Card title="Billing & Subscriptions" icon="credit-card" href="/advanced/billing-subscriptions">
+    Upgrade your plan for higher limits
+  </Card>
+</CardGroup>

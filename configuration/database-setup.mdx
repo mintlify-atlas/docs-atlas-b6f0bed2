@@ -1,0 +1,410 @@
+---
+title: Database Setup
+description: Configure PostgreSQL with Neon, set up Drizzle ORM, and manage database migrations for Deni AI
+---
+
+Deni AI uses PostgreSQL as its database with Drizzle ORM for type-safe database access and schema management.
+
+## PostgreSQL Setup
+
+### Using Neon (Recommended)
+
+[Neon](https://neon.tech/) provides serverless PostgreSQL with excellent Next.js integration.
+
+<Steps>
+  <Step title="Create Neon Account">
+    Sign up at [neon.tech](https://neon.tech/) and create a new project.
+  </Step>
+  
+  <Step title="Get Connection String">
+    Copy your connection string from the Neon dashboard. It should look like:
+    ```
+    postgresql://user:password@ep-xxx.region.neon.tech/dbname?sslmode=require
+    ```
+  </Step>
+  
+  <Step title="Add to Environment">
+    Add the connection string to your `.env` file:
+    ```env
+    DATABASE_URL=postgresql://user:password@ep-xxx.region.neon.tech/dbname?sslmode=require
+    ```
+  </Step>
+</Steps>
+
+### Using Other PostgreSQL Providers
+
+Deni AI works with any PostgreSQL database:
+
+- **Supabase**: Get connection string from project settings
+- **Railway**: Create PostgreSQL service and copy DATABASE_URL
+- **Render**: Create PostgreSQL database and use internal connection string
+- **Self-hosted**: Use standard PostgreSQL connection string format
+
+<Note>
+  Ensure your PostgreSQL version is 12 or higher for full compatibility.
+</Note>
+
+## Drizzle ORM Configuration
+
+Drizzle is configured in `drizzle.config.ts:1` with the following settings:
+
+```ts
+import { defineConfig } from "drizzle-kit";
+
+export default defineConfig({
+  schema: "./src/db/schema/index.ts",
+  out: "./migrations",
+  dialect: "postgresql",
+  dbCredentials: {
+    url: process.env.DATABASE_URL || "",
+  },
+});
+```
+
+- **schema**: Location of schema definitions (`src/db/schema/`)
+- **out**: Migration files output directory
+- **dialect**: PostgreSQL dialect
+- **dbCredentials**: Uses `DATABASE_URL` environment variable
+
+## Database Schema Overview
+
+The database schema is organized into multiple files under `src/db/schema/`:
+
+### Authentication Tables
+
+Managed by better-auth in `src/db/schema/auth-schema.ts`:
+
+- **user**: User accounts and profiles
+- **session**: Active user sessions
+- **account**: OAuth account connections
+- **verification**: Email verification tokens
+- **organization**: Team/organization data
+- **member**: Organization membership
+- **invitation**: Organization invitations
+
+### Application Tables
+
+#### Chats (`src/db/schema/chat.ts:5`)
+
+Stores chat conversations and messages:
+
+```ts
+- id: Unique chat identifier
+- uid: User ID (foreign key)
+- title: Chat title
+- messages: JSONB array of messages
+- created_at: Creation timestamp
+- updated_at: Last update timestamp
+```
+
+#### Billing (`src/db/schema/billing.ts:14`)
+
+Manages Stripe subscriptions and payments:
+
+```ts
+- id: Billing record ID
+- userId: User ID (foreign key)
+- organizationId: Optional organization ID
+- stripeCustomerId: Stripe customer ID
+- stripeSubscriptionId: Stripe subscription ID
+- planId: Subscription plan identifier
+- priceId: Stripe price ID
+- status: Subscription status (active/inactive)
+- cancelAt: Cancellation timestamp
+- mode: Billing mode (subscription)
+- currentPeriodEnd: Current period end date
+- maxModeEnabled: Usage-based billing flag
+- maxModeUsageBasic: Basic tier usage count
+- maxModeUsagePremium: Premium tier usage count
+```
+
+#### Provider Keys (`src/db/schema/provider-keys.ts:6`)
+
+User-specific API keys for AI providers:
+
+```ts
+- id: Record ID
+- userId: User ID (foreign key)
+- provider: Provider name (openai, anthropic, etc.)
+- keyEnc: Encrypted API key
+- createdAt: Creation timestamp
+- updatedAt: Update timestamp
+```
+
+<Note>
+  API keys are encrypted before storage for security.
+</Note>
+
+#### Provider Settings (`src/db/schema/provider-settings.ts:9`)
+
+User preferences for AI providers:
+
+```ts
+- id: Record ID
+- userId: User ID (foreign key)
+- provider: Provider identifier
+- preferByok: Prefer bring-your-own-key
+- baseUrl: Custom API base URL
+- apiStyle: API style (chat/responses)
+```
+
+#### Custom Models (`src/db/schema/custom-models.ts:8`)
+
+User-defined custom AI models:
+
+```ts
+- id: Model ID
+- userId: User ID (foreign key)
+- provider: Provider type
+- name: Model display name
+- modelId: Model identifier
+- description: Model description
+- premium: Premium model flag
+- inputPriceMicros: Input token price (micro-units)
+- outputPriceMicros: Output token price (micro-units)
+- reasoningPriceMicros: Reasoning token price (micro-units)
+```
+
+#### Usage Quota (`src/db/schema/usage.ts:6`)
+
+Track API usage limits:
+
+```ts
+- id: Record ID
+- userId: User ID (foreign key)
+- category: Usage category (basic/premium)
+- planTier: Plan tier (free/pro/max)
+- limitAmount: Usage limit
+- used: Current usage count
+- periodStart: Period start date
+- periodEnd: Period end date
+```
+
+#### Chat Shares (`src/db/schema/share.ts:8`)
+
+Share chat conversations:
+
+```ts
+- id: Share ID
+- chatId: Chat ID (foreign key)
+- ownerId: Owner user ID (foreign key)
+- visibility: public or private
+- allowFork: Allow forking flag
+- createdAt: Creation timestamp
+```
+
+## Running Migrations
+
+### Initial Setup
+
+Generate and apply the initial database schema:
+
+<CodeGroup>
+
+```bash bun
+# Generate migration files from schema
+bun run db:generate
+
+# Apply migrations to database
+bun run db:migrate
+
+# Generate better-auth schema
+bun run auth:generate
+```
+
+```bash npm
+# Generate migration files from schema
+npm run db:generate
+
+# Apply migrations to database
+npm run db:migrate
+
+# Generate better-auth schema
+npm run auth:generate
+```
+
+```bash pnpm
+# Generate migration files from schema
+pnpm db:generate
+
+# Apply migrations to database
+pnpm db:migrate
+
+# Generate better-auth schema
+pnpm auth:generate
+```
+
+</CodeGroup>
+
+### Development Workflow
+
+For rapid development, you can push schema changes directly:
+
+<CodeGroup>
+
+```bash bun
+# Push schema directly (skip migrations)
+bun run db:push
+```
+
+```bash npm
+npm run db:push
+```
+
+```bash pnpm
+pnpm db:push
+```
+
+</CodeGroup>
+
+<Warning>
+  `db:push` is convenient for development but should not be used in production. Always use proper migrations for production deployments.
+</Warning>
+
+### Modifying the Schema
+
+<Steps>
+  <Step title="Edit Schema Files">
+    Modify files in `src/db/schema/` to add or change tables, columns, or indexes.
+  </Step>
+  
+  <Step title="Generate Migration">
+    Create a migration file:
+    <CodeGroup>
+      ```bash bun
+      bun run db:generate
+      ```
+      ```bash npm
+      npm run db:generate
+      ```
+      ```bash pnpm
+      pnpm db:generate
+      ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Review Migration">
+    Check the generated SQL in `migrations/` directory to ensure it's correct.
+  </Step>
+  
+  <Step title="Apply Migration">
+    Run the migration:
+    <CodeGroup>
+      ```bash bun
+      bun run db:migrate
+      ```
+      ```bash npm
+      npm run db:migrate
+      ```
+      ```bash pnpm
+      pnpm db:migrate
+      ```
+    </CodeGroup>
+  </Step>
+</Steps>
+
+## Database Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `bun run db:generate` | Generate migration files from schema changes |
+| `bun run db:migrate` | Apply pending migrations to database |
+| `bun run db:push` | Push schema directly without migrations (dev only) |
+| `bun run auth:generate` | Regenerate better-auth schema tables |
+
+## Connection Management
+
+Drizzle uses the Neon HTTP driver for serverless compatibility:
+
+```ts
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+
+const sql = neon(process.env.DATABASE_URL!);
+export const db = drizzle(sql);
+```
+
+This provides:
+- Serverless-friendly connections
+- Automatic connection pooling
+- Edge runtime compatibility
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Migrations in Production">
+    Always use `db:generate` and `db:migrate` for production. Never use `db:push` in production as it can cause data loss.
+  </Accordion>
+  
+  <Accordion title="Backup Before Destructive Changes">
+    Before dropping columns or changing types, backup your database:
+    ```bash
+    pg_dump $DATABASE_URL > backup.sql
+    ```
+  </Accordion>
+  
+  <Accordion title="Test Migrations Locally">
+    Test all migrations in a development environment before applying to production.
+  </Accordion>
+  
+  <Accordion title="Version Control Migrations">
+    Always commit migration files to version control alongside schema changes.
+  </Accordion>
+  
+  <Accordion title="Index Performance-Critical Queries">
+    Add indexes for frequently queried columns. The schema includes indexes on:
+    - Foreign keys
+    - User lookups
+    - Date ranges
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### Connection Errors
+
+If you get connection errors:
+
+1. Verify `DATABASE_URL` is set correctly in `.env`
+2. Check network connectivity to your database
+3. Ensure SSL mode is configured (add `?sslmode=require` for Neon)
+4. Verify database credentials are correct
+
+### Migration Conflicts
+
+If migrations fail:
+
+1. Check the error message in the console
+2. Review the generated SQL in `migrations/`
+3. Ensure no manual schema changes were made
+4. Roll back if needed and regenerate migrations
+
+### Schema Sync Issues
+
+If schema is out of sync:
+
+<CodeGroup>
+
+```bash Development
+# Reset and regenerate (development only)
+bun run db:push
+```
+
+```bash Production
+# Generate new migration from current state
+bun run db:generate
+bun run db:migrate
+```
+
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication Setup" icon="shield-halved" href="/configuration/authentication">
+    Configure OAuth providers and authentication
+  </Card>
+  <Card title="Environment Variables" icon="gear" href="/configuration/environment-variables">
+    Review all configuration options
+  </Card>
+</CardGroup>
